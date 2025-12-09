@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { useState, ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { cn } from "@/lib/utils";
 
-export function MainLayout() {
+interface MainLayoutProps {
+  children: ReactNode;
+}
+
+export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
@@ -21,7 +24,7 @@ export function MainLayout() {
         )}
       >
         <div className="p-6">
-          <Outlet />
+          {children}
         </div>
       </main>
     </div>
