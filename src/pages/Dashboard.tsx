@@ -1,15 +1,11 @@
-import {
-  DollarSign,
-  Users,
-  Scissors,
-  TrendingUp,
-  Calendar,
-} from "lucide-react";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { RevenueChart } from "@/components/dashboard/RevenueChart";
-import { TopServices } from "@/components/dashboard/TopServices";
-import { RecentSales } from "@/components/dashboard/RecentSales";
-import { BarberStatus } from "@/components/dashboard/BarberStatus";
+import { Calendar, Scissors } from "lucide-react";
+import { MetricCards } from "@/components/dashboard/MetricCards";
+import { RevenueChart30Days } from "@/components/dashboard/RevenueChart30Days";
+import { ServicesBarChart } from "@/components/dashboard/ServicesBarChart";
+import { PaymentDonutChart } from "@/components/dashboard/PaymentDonutChart";
+import { BarberRanking } from "@/components/dashboard/BarberRanking";
+import { AlertsTimeline } from "@/components/dashboard/AlertsTimeline";
+import { BarberSchedule } from "@/components/dashboard/BarberSchedule";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
@@ -37,50 +33,25 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Ingresos del Día"
-          value="$1,248"
-          change={{ value: 12.5, type: "increase" }}
-          icon={DollarSign}
-          iconColor="primary"
-        />
-        <StatCard
-          title="Servicios Realizados"
-          value="24"
-          change={{ value: 8.2, type: "increase" }}
-          icon={Scissors}
-          iconColor="secondary"
-        />
-        <StatCard
-          title="Clientes Nuevos"
-          value="7"
-          change={{ value: 23.1, type: "increase" }}
-          icon={Users}
-          iconColor="success"
-        />
-        <StatCard
-          title="Ticket Promedio"
-          value="$52"
-          change={{ value: 4.3, type: "decrease" }}
-          icon={TrendingUp}
-          iconColor="info"
-        />
+      {/* Metric Cards */}
+      <MetricCards />
+
+      {/* Charts Grid - 2 columns */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <RevenueChart30Days />
+        <ServicesBarChart />
       </div>
 
-      {/* Charts Row */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <RevenueChart />
-        </div>
-        <TopServices />
+      {/* Second row of charts */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <PaymentDonutChart />
+        <BarberRanking />
       </div>
 
       {/* Bottom Row */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <RecentSales />
-        <BarberStatus />
+        <AlertsTimeline />
+        <BarberSchedule />
       </div>
     </div>
   );
