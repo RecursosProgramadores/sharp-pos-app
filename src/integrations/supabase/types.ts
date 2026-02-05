@@ -14,16 +14,337 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      barber_schedules: {
+        Row: {
+          barber_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+        }
+        Insert: {
+          barber_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+        }
+        Update: {
+          barber_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_schedules_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_schedules_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "income_by_barber"
+            referencedColumns: ["barber_id"]
+          },
+        ]
+      }
+      barbers: {
+        Row: {
+          active: boolean
+          created_at: string
+          full_name: string
+          id: string
+          phone: string | null
+          photo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      haircuts: {
+        Row: {
+          barber_id: string | null
+          created_at: string
+          id: string
+          payment_method: string
+          price: number
+          service_name: string
+        }
+        Insert: {
+          barber_id?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string
+          price: number
+          service_name: string
+        }
+        Update: {
+          barber_id?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string
+          price?: number
+          service_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "haircuts_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "haircuts_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "income_by_barber"
+            referencedColumns: ["barber_id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          barcode: string | null
+          created_at: string
+          id: string
+          name: string
+          purchase_price: number
+          sale_price: number
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          barcode?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          purchase_price?: number
+          sale_price: number
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          barcode?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          purchase_price?: number
+          sale_price?: number
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sale_items: {
+        Row: {
+          created_at: string
+          id: string
+          price: number
+          product_id: string | null
+          quantity: number
+          sale_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          price: number
+          product_id?: string | null
+          quantity: number
+          sale_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          price?: number
+          product_id?: string | null
+          quantity?: number
+          sale_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "top_products"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          barber_id: string | null
+          created_at: string
+          id: string
+          payment_method: string
+          total: number
+        }
+        Insert: {
+          barber_id?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string
+          total?: number
+        }
+        Update: {
+          barber_id?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "income_by_barber"
+            referencedColumns: ["barber_id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      daily_sales: {
+        Row: {
+          average_ticket: number | null
+          sale_date: string | null
+          total_revenue: number | null
+          total_transactions: number | null
+        }
+        Relationships: []
+      }
+      income_by_barber: {
+        Row: {
+          average_ticket: number | null
+          barber_id: string | null
+          barber_name: string | null
+          total_revenue: number | null
+          total_sales: number | null
+        }
+        Relationships: []
+      }
+      monthly_sales: {
+        Row: {
+          average_ticket: number | null
+          sale_month: string | null
+          total_revenue: number | null
+          total_transactions: number | null
+        }
+        Relationships: []
+      }
+      top_products: {
+        Row: {
+          product_id: string | null
+          product_name: string | null
+          total_revenue: number | null
+          units_sold: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +471,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const
