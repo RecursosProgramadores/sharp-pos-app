@@ -9,11 +9,12 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  UserPlus,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -116,7 +117,6 @@ export default function UsersRolesTab() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      // Obtener los roles de usuarios
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role, created_at");
@@ -127,7 +127,6 @@ export default function UsersRolesTab() {
         return;
       }
 
-      // Obtener perfiles
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("id, full_name");
@@ -136,7 +135,6 @@ export default function UsersRolesTab() {
         console.error("Error fetching profiles:", profilesError);
       }
 
-      // Combinar datos
       const systemUsers: SystemUser[] = (rolesData || []).map((roleEntry) => {
         const profile = profilesData?.find((p) => p.id === roleEntry.user_id);
         return {
@@ -173,7 +171,6 @@ export default function UsersRolesTab() {
   };
 
   const handleCreateUser = async () => {
-    // Validar datos
     const validation = newUserSchema.safeParse(newUser);
     if (!validation.success) {
       const errors = validation.error.flatten().fieldErrors;
@@ -184,56 +181,35 @@ export default function UsersRolesTab() {
 
     setIsCreating(true);
     try {
-      // Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: newUser.name,
-          },
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error("Sesión no válida");
+        return;
+      }
+
+      const response = await supabase.functions.invoke("create-user", {
+        body: {
+          email: newUser.email,
+          password: newUser.password,
+          full_name: newUser.name,
+          role: newUser.role,
         },
       });
 
-      if (authError) {
-        if (authError.message.includes("already registered")) {
-          toast.error("Este email ya está registrado");
-        } else {
-          toast.error("Error al crear usuario: " + authError.message);
-        }
+      if (response.error) {
+        console.error("Edge function error:", response.error);
+        toast.error("Error al crear usuario");
         return;
       }
 
-      if (!authData.user) {
-        toast.error("No se pudo crear el usuario");
+      const data = response.data;
+      
+      if (data.error) {
+        toast.error(data.error);
         return;
       }
 
-      // Actualizar el rol del usuario (el trigger ya crea el perfil y rol admin por defecto)
-      // Necesitamos actualizar el rol si es cajero
-      if (newUser.role === "cajero") {
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .update({ role: "cajero" })
-          .eq("user_id", authData.user.id);
-
-        if (roleError) {
-          console.error("Error updating role:", roleError);
-          // Intentar insertar si no existe
-          await supabase
-            .from("user_roles")
-            .insert({ user_id: authData.user.id, role: "cajero" });
-        }
-      }
-
-      // Actualizar el nombre en el perfil
-      await supabase
-        .from("profiles")
-        .update({ full_name: newUser.name })
-        .eq("id", authData.user.id);
-
-      toast.success("¡Usuario creado correctamente! Se envió un email de confirmación.");
+      toast.success(`¡Usuario ${newUser.role === "admin" ? "administrador" : "cajero"} creado correctamente!`);
       
       setNewUser({
         name: "",
@@ -254,7 +230,6 @@ export default function UsersRolesTab() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      // Solo eliminamos el rol (no podemos eliminar el usuario de auth desde el cliente)
       const { error } = await supabase
         .from("user_roles")
         .delete()
@@ -279,6 +254,17 @@ export default function UsersRolesTab() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const resetForm = () => {
+    setNewUser({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "",
+    });
+    setShowPassword(false);
+  };
+
   return (
     <div className="space-y-6">
       <Card className="card-elevated">
@@ -290,146 +276,161 @@ export default function UsersRolesTab() {
                 Gestión de Usuarios
               </CardTitle>
               <CardDescription>
-                Administra los usuarios del sistema y sus roles
+                Administra los usuarios del sistema y sus permisos de acceso
               </CardDescription>
             </div>
-            <Dialog open={isNewUserOpen} onOpenChange={setIsNewUserOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nuevo Cajero
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-                  <DialogDescription>
-                    Completa la información del nuevo usuario
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="flex justify-center">
-                    <Avatar className="h-20 w-20">
-                      <AvatarFallback className="text-xl bg-primary text-primary-foreground">
-                        {newUser.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase() || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" onClick={fetchUsers} disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              </Button>
+              <Dialog open={isNewUserOpen} onOpenChange={(open) => {
+                setIsNewUserOpen(open);
+                if (!open) resetForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Nuevo Usuario
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <UserPlus className="h-5 w-5 text-primary" />
+                      Crear Nuevo Usuario
+                    </DialogTitle>
+                    <DialogDescription>
+                      El usuario podrá acceder al sistema con sus credenciales
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="flex justify-center">
+                      <Avatar className="h-20 w-20">
+                        <AvatarFallback className="text-xl bg-primary text-primary-foreground">
+                          {newUser.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>Nombre Completo *</Label>
-                    <Input
-                      value={newUser.name}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, name: e.target.value })
-                      }
-                      placeholder="Juan Pérez"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Email *</Label>
-                    <Input
-                      type="email"
-                      value={newUser.email}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, email: e.target.value })
-                      }
-                      placeholder="usuario@email.com"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Contraseña *</Label>
-                    <div className="relative">
+                    <div className="space-y-2">
+                      <Label>Nombre Completo *</Label>
                       <Input
-                        type={showPassword ? "text" : "password"}
-                        value={newUser.password}
+                        value={newUser.name}
                         onChange={(e) =>
-                          setNewUser({ ...newUser, password: e.target.value })
+                          setNewUser({ ...newUser, name: e.target.value })
                         }
-                        placeholder="Mínimo 6 caracteres"
+                        placeholder="Juan Pérez"
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                        onClick={() => setShowPassword(!showPassword)}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Email *</Label>
+                      <Input
+                        type="email"
+                        value={newUser.email}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, email: e.target.value })
+                        }
+                        placeholder="usuario@email.com"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Contraseña *</Label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          value={newUser.password}
+                          onChange={(e) =>
+                            setNewUser({ ...newUser, password: e.target.value })
+                          }
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Confirmar Contraseña *</Label>
+                      <Input
+                        type="password"
+                        value={newUser.confirmPassword}
+                        onChange={(e) =>
+                          setNewUser({
+                            ...newUser,
+                            confirmPassword: e.target.value,
+                          })
+                        }
+                        placeholder="Repite la contraseña"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Rol de Usuario *</Label>
+                      <Select
+                        value={newUser.role}
+                        onValueChange={(value: "admin" | "cajero") =>
+                          setNewUser({ ...newUser, role: value })
+                        }
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar rol" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roles.map((role) => (
+                            <SelectItem key={role.id} value={role.id}>
+                              <div className="flex items-center gap-2">
+                                <role.icon className="h-4 w-4" />
+                                <div>
+                                  <span className="font-medium">{role.name}</span>
+                                  <span className="text-xs text-muted-foreground ml-2">
+                                    - {role.description}
+                                  </span>
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Confirmar Contraseña *</Label>
-                    <Input
-                      type="password"
-                      value={newUser.confirmPassword}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          confirmPassword: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Rol *</Label>
-                    <Select
-                      value={newUser.role}
-                      onValueChange={(value: "admin" | "cajero") =>
-                        setNewUser({ ...newUser, role: value })
-                      }
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsNewUserOpen(false)}
+                      disabled={isCreating}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar rol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles.map((role) => (
-                          <SelectItem key={role.id} value={role.id}>
-                            <div className="flex items-center gap-2">
-                              <role.icon className="h-4 w-4" />
-                              <div>
-                                <span className="font-medium">{role.name}</span>
-                                <span className="text-xs text-muted-foreground ml-2">
-                                  - {role.description}
-                                </span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsNewUserOpen(false)}
-                    disabled={isCreating}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleCreateUser} disabled={isCreating}>
-                    {isCreating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creando...
-                      </>
-                    ) : (
-                      "Crear Usuario"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleCreateUser} disabled={isCreating}>
+                      {isCreating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creando...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Crear Usuario
+                        </>
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -437,7 +438,7 @@ export default function UsersRolesTab() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nombre o email..."
+                placeholder="Buscar por nombre..."
                 className="pl-10 max-w-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -512,7 +513,7 @@ export default function UsersRolesTab() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Esta acción no se puede deshacer. El usuario perderá acceso al sistema.
+                                Esta acción no se puede deshacer. El usuario "{user.full_name}" perderá acceso al sistema.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
