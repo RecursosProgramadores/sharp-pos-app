@@ -59,30 +59,63 @@ export type Database = {
       barbers: {
         Row: {
           active: boolean
+          commission_percentage: number | null
           created_at: string
+          dni: string | null
+          email: string | null
           full_name: string
+          hire_date: string | null
           id: string
+          incentive_per_cut: number | null
+          incentive_threshold: number | null
+          incentives_enabled: boolean | null
+          lunch_amount: number | null
+          lunch_included: boolean | null
           phone: string | null
           photo_url: string | null
+          specialty: string | null
           updated_at: string
+          work_type: string | null
         }
         Insert: {
           active?: boolean
+          commission_percentage?: number | null
           created_at?: string
+          dni?: string | null
+          email?: string | null
           full_name: string
+          hire_date?: string | null
           id?: string
+          incentive_per_cut?: number | null
+          incentive_threshold?: number | null
+          incentives_enabled?: boolean | null
+          lunch_amount?: number | null
+          lunch_included?: boolean | null
           phone?: string | null
           photo_url?: string | null
+          specialty?: string | null
           updated_at?: string
+          work_type?: string | null
         }
         Update: {
           active?: boolean
+          commission_percentage?: number | null
           created_at?: string
+          dni?: string | null
+          email?: string | null
           full_name?: string
+          hire_date?: string | null
           id?: string
+          incentive_per_cut?: number | null
+          incentive_threshold?: number | null
+          incentives_enabled?: boolean | null
+          lunch_amount?: number | null
+          lunch_included?: boolean | null
           phone?: string | null
           photo_url?: string | null
+          specialty?: string | null
           updated_at?: string
+          work_type?: string | null
         }
         Relationships: []
       }

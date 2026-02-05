@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { X, Edit, Star, Scissors, DollarSign, TrendingUp, Phone, Mail, IdCard, Calendar } from "lucide-react";
+import { Edit, Star, Scissors, DollarSign, TrendingUp, Phone, Mail, IdCard, Calendar, Utensils, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,7 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
           className={cn(
             "h-4 w-4",
             i < Math.floor(rating)
-              ? "fill-yellow-400 text-yellow-400"
+              ? "fill-warning text-warning"
               : "text-muted-foreground/30"
           )}
         />
@@ -86,6 +86,9 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20 border-4 border-primary/20">
+                {barber.photoUrl && (
+                  <AvatarImage src={barber.photoUrl} alt={barber.name} />
+                )}
                 <AvatarFallback className="bg-primary text-primary-foreground font-display text-2xl">
                   {barber.name.split(" ")[0][0]}
                   {barber.name.split(" ")[1]?.[0]}
@@ -142,7 +145,7 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
                 <TrendingUp className="h-5 w-5 text-info" />
               </div>
               <div>
-                <p className="font-display text-2xl">{Math.round(barber.totalCuts / 30)}</p>
+                <p className="font-display text-2xl">{barber.totalCuts > 0 ? Math.round(barber.totalCuts / 30) : 0}</p>
                 <p className="text-xs text-muted-foreground">Promedio/Día</p>
               </div>
             </div>
@@ -152,8 +155,9 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
         {/* Content Tabs */}
         <div className="p-6">
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="info">Información</TabsTrigger>
+              <TabsTrigger value="payments">Pagos</TabsTrigger>
               <TabsTrigger value="services">Servicios</TabsTrigger>
               <TabsTrigger value="performance">Rendimiento</TabsTrigger>
               <TabsTrigger value="history">Historial</TabsTrigger>
@@ -169,7 +173,7 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
                   {isEditing ? (
                     <Input defaultValue={barber.dni} />
                   ) : (
-                    <p className="font-medium">{barber.dni}</p>
+                    <p className="font-medium">{barber.dni || "-"}</p>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -179,7 +183,7 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
                   {isEditing ? (
                     <Input defaultValue={barber.phone} />
                   ) : (
-                    <p className="font-medium">{barber.phone}</p>
+                    <p className="font-medium">{barber.phone || "-"}</p>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -189,7 +193,7 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
                   {isEditing ? (
                     <Input defaultValue={barber.email} />
                   ) : (
-                    <p className="font-medium">{barber.email}</p>
+                    <p className="font-medium">{barber.email || "-"}</p>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -197,11 +201,11 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
                     <Calendar className="h-4 w-4" /> Fecha de Ingreso
                   </p>
                   <p className="font-medium">
-                    {new Date(barber.hireDate).toLocaleDateString("es-MX", {
+                    {barber.hireDate ? new Date(barber.hireDate).toLocaleDateString("es-MX", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
-                    })}
+                    }) : "-"}
                   </p>
                 </div>
               </div>
@@ -230,34 +234,107 @@ export function BarberDetailsModal({ barber, open, onOpenChange }: BarberDetails
               </div>
             </TabsContent>
 
+            {/* Payments Tab */}
+            <TabsContent value="payments" className="mt-4 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Commission */}
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <h4 className="font-medium">Comisión por Cortes</h4>
+                  </div>
+                  <p className="font-display text-3xl text-primary">
+                    {barber.commissionPercentage ?? 50}%
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Del total de ventas diarias
+                  </p>
+                </div>
+
+                {/* Lunch */}
+                <div className={cn(
+                  "p-4 rounded-lg border",
+                  barber.lunchIncluded ? "bg-success/10 border-success/20" : "bg-muted/30 border-border"
+                )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Utensils className="h-5 w-5" />
+                    <h4 className="font-medium">Almuerzo</h4>
+                  </div>
+                  {barber.lunchIncluded ? (
+                    <>
+                      <p className="font-display text-3xl text-success">
+                        ${barber.lunchAmount ?? 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Por día trabajado
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">No incluido</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Incentives */}
+              <div className={cn(
+                "p-4 rounded-lg border",
+                barber.incentivesEnabled ? "bg-warning/10 border-warning/20" : "bg-muted/30 border-border"
+              )}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Award className="h-5 w-5" />
+                  <h4 className="font-medium">Incentivos por Productividad</h4>
+                </div>
+                {barber.incentivesEnabled ? (
+                  <div className="grid sm:grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Umbral de activación</p>
+                      <p className="font-display text-xl">{barber.incentiveThreshold ?? 0} cortes/día</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Bono por corte adicional</p>
+                      <p className="font-display text-xl text-warning">${barber.incentivePerCut ?? 0}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No activados</p>
+                )}
+              </div>
+            </TabsContent>
+
             {/* Services Tab */}
             <TabsContent value="services" className="mt-4">
-              <div className="space-y-2">
-                {barber.services.map((service, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    <div>
-                      <p className="font-medium">{service.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Duración: {service.duration} min
-                      </p>
+              {barber.services.length > 0 ? (
+                <div className="space-y-2">
+                  {barber.services.map((service, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div>
+                        <p className="font-medium">{service.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Duración: {service.duration} min
+                        </p>
+                      </div>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          defaultValue={service.price}
+                          className="w-24"
+                        />
+                      ) : (
+                        <span className="font-display text-xl text-primary">
+                          ${service.price}
+                        </span>
+                      )}
                     </div>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        defaultValue={service.price}
-                        className="w-24"
-                      />
-                    ) : (
-                      <span className="font-display text-xl text-primary">
-                        ${service.price}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No hay servicios configurados para este barbero
+                </p>
+              )}
             </TabsContent>
 
             {/* Performance Tab */}

@@ -1,7 +1,7 @@
-import { Star, Eye, Edit, Power, Phone, Mail, Calendar, IdCard } from "lucide-react";
+import { Star, Eye, Edit, Power, Calendar, IdCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export interface BarberService {
@@ -11,7 +11,7 @@ export interface BarberService {
 }
 
 export interface Barber {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -19,12 +19,19 @@ export interface Barber {
   status: "active" | "inactive" | "vacation";
   specialty: string;
   hireDate: string;
-  photoUrl?: string;
+  photoUrl?: string | null;
   services: BarberService[];
   rating: number;
   reviewCount: number;
   totalCuts: number;
   revenue: number;
+  // Payment fields
+  commissionPercentage?: number;
+  lunchIncluded?: boolean;
+  lunchAmount?: number;
+  incentivesEnabled?: boolean;
+  incentivePerCut?: number;
+  incentiveThreshold?: number;
 }
 
 interface BarberCardProps {
@@ -67,6 +74,9 @@ export function BarberCard({ barber, onViewDetails, onEdit, onToggleStatus }: Ba
       <div className="flex flex-col items-center text-center mb-4">
         <div className="relative mb-3">
           <Avatar className="h-20 w-20 border-4 border-primary/20">
+            {barber.photoUrl && (
+              <AvatarImage src={barber.photoUrl} alt={barber.name} />
+            )}
             <AvatarFallback className="bg-primary text-primary-foreground font-display text-2xl">
               {barber.name.split(" ")[0][0]}
               {barber.name.split(" ")[1]?.[0]}
@@ -91,32 +101,44 @@ export function BarberCard({ barber, onViewDetails, onEdit, onToggleStatus }: Ba
 
       {/* Info Section */}
       <div className="space-y-2 text-sm border-t border-border pt-4">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <IdCard className="h-4 w-4 shrink-0" />
-          <span>DNI: {barber.dni}</span>
-        </div>
+        {barber.dni && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <IdCard className="h-4 w-4 shrink-0" />
+            <span>DNI: {barber.dni}</span>
+          </div>
+        )}
         <div className="flex items-center gap-2 text-muted-foreground">
           <Calendar className="h-4 w-4 shrink-0" />
           <span>Desde {new Date(barber.hireDate).toLocaleDateString("es-MX", { month: "short", year: "numeric" })}</span>
         </div>
+        {barber.commissionPercentage !== undefined && (
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span>Comisión:</span>
+            <Badge variant="secondary" className="text-xs">
+              {barber.commissionPercentage}%
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Services List */}
-      <div className="mt-4 pt-4 border-t border-border">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Servicios:</p>
-        <div className="flex flex-wrap gap-1">
-          {barber.services.slice(0, 3).map((service) => (
-            <Badge key={service.name} variant="secondary" className="text-xs">
-              {service.name} - ${service.price}
-            </Badge>
-          ))}
-          {barber.services.length > 3 && (
-            <Badge variant="outline" className="text-xs">
-              +{barber.services.length - 3} más
-            </Badge>
-          )}
+      {barber.services.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Servicios:</p>
+          <div className="flex flex-wrap gap-1">
+            {barber.services.slice(0, 3).map((service) => (
+              <Badge key={service.name} variant="secondary" className="text-xs">
+                {service.name} - ${service.price}
+              </Badge>
+            ))}
+            {barber.services.length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{barber.services.length - 3} más
+              </Badge>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Rating */}
       <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-border">
