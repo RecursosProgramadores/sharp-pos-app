@@ -40,16 +40,16 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   // Si se especifican roles permitidos, verificar
   if (allowedRoles && !allowedRoles.includes(role)) {
-    // Redirigir cajeros a barberos (su primera página disponible)
+    // Redirigir cajeros a reservas (su primera página disponible)
     if (role === "cajero") {
       // Si ya está en una ruta permitida para cajero, no redirigir
-      const cajeroRoutes = ["/barberos", "/inventario", "/pos", "/clientes"];
+      const cajeroRoutes = ["/admin/reservas", "/admin/barberos", "/admin/inventario", "/admin/pos", "/admin/clientes"];
       if (cajeroRoutes.includes(location.pathname)) {
         return <>{children}</>;
       }
-      return <Navigate to="/barberos" replace />;
+      return <Navigate to="/admin/reservas" replace />;
     }
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   return <>{children}</>;

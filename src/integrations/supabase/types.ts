@@ -236,6 +236,42 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          schedule: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          schedule?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          schedule?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
@@ -292,6 +328,86 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reservations: {
+        Row: {
+          barber_id: string | null
+          client_email: string | null
+          client_name: string
+          client_phone: string
+          created_at: string
+          id: string
+          location_id: string | null
+          notes: string | null
+          reservation_date: string
+          reservation_time: string
+          satisfaction_rating: number | null
+          service_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          barber_id?: string | null
+          client_email?: string | null
+          client_name: string
+          client_phone: string
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          reservation_date: string
+          reservation_time: string
+          satisfaction_rating?: number | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          barber_id?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          reservation_date?: string
+          reservation_time?: string
+          satisfaction_rating?: number | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "income_by_barber"
+            referencedColumns: ["barber_id"]
+          },
+          {
+            foreignKeyName: "reservations_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sale_items: {
         Row: {
@@ -380,6 +496,45 @@ export type Database = {
             referencedColumns: ["barber_id"]
           },
         ]
+      }
+      services: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          is_active: boolean | null
+          is_popular: boolean | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
