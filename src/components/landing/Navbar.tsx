@@ -22,9 +22,8 @@ export function Navbar({ onReserveClick }: NavbarProps) {
   const navLinks = [
     { href: "#nosotros", label: "Nosotros" },
     { href: "#servicios", label: "Servicios" },
-    { href: "#equipo", label: "Equipo" },
-    { href: "#galeria", label: "Galería" },
-    { href: "#contacto", label: "Contacto" },
+    { href: "#beneficios", label: "Beneficios" },
+    { href: "#testimonios", label: "Testimonios" },
   ];
 
   return (
