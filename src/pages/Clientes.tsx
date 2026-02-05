@@ -3,7 +3,6 @@ import {
   Plus,
   Search,
   Download,
-  Filter,
   Users,
   Star,
   UserPlus,
@@ -16,11 +15,12 @@ import {
   Calendar,
   Phone,
   Mail,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -36,12 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewClientModal } from "@/components/clientes/NewClientModal";
 import { ClientDetailsModal } from "@/components/clientes/ClientDetailsModal";
@@ -49,43 +43,12 @@ import { BirthdayReminders } from "@/components/clientes/BirthdayReminders";
 import { InactiveClients } from "@/components/clientes/InactiveClients";
 import { LoyaltyConfig } from "@/components/clientes/LoyaltyConfig";
 import { toast } from "sonner";
-
-interface Client {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  birthDate: string;
-  lastVisit: string;
-  visits: number;
-  totalSpent: number;
-  level: "new" | "regular" | "vip" | "premium";
-  photo?: string;
-  preferredBarber?: string;
-  preferredServices?: string[];
-  notes?: string;
-  points: number;
-}
-
-const initialClients: Client[] = [
-  { id: 1, name: "Carlos Mendoza", email: "carlos@email.com", phone: "+52 55 1234 5678", birthDate: "1990-12-20", lastVisit: "2024-01-15", visits: 24, totalSpent: 1250, level: "vip", preferredBarber: "Miguel Torres", points: 125 },
-  { id: 2, name: "Roberto García", email: "roberto@email.com", phone: "+52 55 2345 6789", birthDate: "1985-12-05", lastVisit: "2024-01-14", visits: 12, totalSpent: 580, level: "regular", points: 58 },
-  { id: 3, name: "Luis Pérez", email: "luis@email.com", phone: "+52 55 3456 7890", birthDate: "1992-03-15", lastVisit: "2024-01-12", visits: 8, totalSpent: 320, level: "regular", points: 32 },
-  { id: 4, name: "Fernando López", email: "fernando@email.com", phone: "+52 55 4567 8901", birthDate: "1988-07-22", lastVisit: "2024-01-10", visits: 35, totalSpent: 2100, level: "premium", preferredBarber: "Carlos Mendoza", points: 210 },
-  { id: 5, name: "Diego Ramírez", email: "diego@email.com", phone: "+52 55 5678 9012", birthDate: "1995-12-28", lastVisit: "2024-01-08", visits: 3, totalSpent: 95, level: "new", points: 10 },
-  { id: 6, name: "Andrés Morales", email: "andres@email.com", phone: "+52 55 6789 0123", birthDate: "1991-06-10", lastVisit: "2023-09-15", visits: 6, totalSpent: 180, level: "regular", points: 18 },
-  { id: 7, name: "Miguel Sánchez", email: "miguel@email.com", phone: "+52 55 7890 1234", birthDate: "1987-01-05", lastVisit: "2023-08-20", visits: 15, totalSpent: 750, level: "vip", points: 75 },
-];
-
-const levelConfig = {
-  new: { label: "Nuevo", icon: "🥉", variant: "outline" as const },
-  regular: { label: "Regular", icon: "🥈", variant: "secondary" as const },
-  vip: { label: "VIP", icon: "🥇", variant: "default" as const },
-  premium: { label: "Premium", icon: "💎", variant: "default" as const },
-};
+import { useClients } from "@/hooks/useClients";
+import { levelConfig } from "@/types/client";
+import type { Client } from "@/types/client";
 
 export default function Clientes() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const { clients, loading, addClient, updateClient, deleteClient, uploadPhoto } = useClients();
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [visitFilter, setVisitFilter] = useState("all");
@@ -94,7 +57,8 @@ export default function Clientes() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const isUpcomingBirthday = (birthDate: string) => {
+  const isUpcomingBirthday = (birthDate: string | null) => {
+    if (!birthDate) return false;
     const today = new Date();
     const birth = new Date(birthDate);
     const thisYearBirthday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
@@ -104,14 +68,14 @@ export default function Clientes() {
 
   const filteredClients = clients
     .filter((client) => {
-      const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch = client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.phone.includes(searchTerm) ||
-        client.email.toLowerCase().includes(searchTerm.toLowerCase());
+        (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesLevel = levelFilter === "all" || client.level === levelFilter;
       
       let matchesVisit = true;
-      if (visitFilter !== "all") {
-        const lastVisit = new Date(client.lastVisit);
+      if (visitFilter !== "all" && client.last_visit) {
+        const lastVisit = new Date(client.last_visit);
         const today = new Date();
         const diffDays = Math.floor((today.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24));
         if (visitFilter === "week") matchesVisit = diffDays <= 7;
@@ -122,10 +86,14 @@ export default function Clientes() {
       return matchesSearch && matchesLevel && matchesVisit;
     })
     .sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "name") return a.full_name.localeCompare(b.full_name);
       if (sortBy === "visits") return b.visits - a.visits;
-      if (sortBy === "spent") return b.totalSpent - a.totalSpent;
-      if (sortBy === "lastVisit") return new Date(b.lastVisit).getTime() - new Date(a.lastVisit).getTime();
+      if (sortBy === "spent") return b.total_spent - a.total_spent;
+      if (sortBy === "lastVisit") {
+        const aDate = a.last_visit ? new Date(a.last_visit).getTime() : 0;
+        const bDate = b.last_visit ? new Date(b.last_visit).getTime() : 0;
+        return bDate - aDate;
+      }
       return 0;
     });
 
@@ -133,7 +101,7 @@ export default function Clientes() {
     total: clients.length,
     vip: clients.filter((c) => c.level === "vip" || c.level === "premium").length,
     new: clients.filter((c) => c.level === "new").length,
-    totalRevenue: clients.reduce((sum, c) => sum + c.totalSpent, 0),
+    totalRevenue: clients.reduce((sum, c) => sum + c.total_spent, 0),
   };
 
   const handleWhatsApp = (phone: string) => {
@@ -144,18 +112,33 @@ export default function Clientes() {
     toast.success("Base de datos exportada exitosamente");
   };
 
-  const handleAddClient = (newClient: Client) => {
-    setClients([...clients, newClient]);
+  const handleDeleteClient = async (id: string) => {
+    await deleteClient(id);
   };
 
-  const handleUpdateClient = (updatedClient: Client) => {
-    setClients(clients.map((c) => c.id === updatedClient.id ? updatedClient : c));
+  const renderSatisfactionStars = (rating: number | null) => {
+    if (!rating) return <span className="text-muted-foreground text-xs">Sin calificar</span>;
+    return (
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-3 w-3 ${
+              star <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"
+            }`}
+          />
+        ))}
+      </div>
+    );
   };
 
-  const handleDeleteClient = (id: number) => {
-    setClients(clients.filter((c) => c.id !== id));
-    toast.success("Cliente eliminado");
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -256,55 +239,95 @@ export default function Clientes() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Contacto</TableHead>
                   <TableHead>Cumpleaños</TableHead>
+                  <TableHead>Barbero</TableHead>
+                  <TableHead className="text-center">Satisfacción</TableHead>
                   <TableHead className="text-center">Visitas</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Última Visita</TableHead>
                   <TableHead>Nivel</TableHead>
                   <TableHead className="text-center">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredClients.map((client) => {
-                  const level = levelConfig[client.level];
-                  const initials = client.name.split(" ").map((n) => n[0]).join("");
-                  return (
-                    <TableRow key={client.id} className="hover:bg-muted/30">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10 border-2 border-primary/20">
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
-                          </Avatar>
-                          <p className="font-medium">{client.name}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <p className="text-sm flex items-center gap-1"><Phone className="h-3 w-3" />{client.phone}
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-success" onClick={() => handleWhatsApp(client.phone)}><MessageCircle className="h-3 w-3" /></Button>
-                          </p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" />{client.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {isUpcomingBirthday(client.birthDate) && <Gift className="h-4 w-4 text-secondary" />}
-                          <span className="text-sm">{new Date(client.birthDate).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center"><Badge variant="secondary">{client.visits}</Badge></TableCell>
-                      <TableCell className="text-right font-semibold">${client.totalSpent.toLocaleString()}</TableCell>
-                      <TableCell><div className="flex items-center gap-1 text-sm text-muted-foreground"><Calendar className="h-3 w-3" />{new Date(client.lastVisit).toLocaleDateString("es-MX")}</div></TableCell>
-                      <TableCell><Badge variant={level.variant}>{level.icon} {level.label}</Badge></TableCell>
-                      <TableCell>
-                        <div className="flex justify-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedClient(client); setIsDetailsOpen(true); }}><Eye className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedClient(client); setIsDetailsOpen(true); }}><Edit className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteClient(client.id)}><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {filteredClients.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      No hay clientes registrados
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredClients.map((client) => {
+                    const level = levelConfig[client.level];
+                    const initials = client.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+                    return (
+                      <TableRow key={client.id} className="hover:bg-muted/30">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10 border-2 border-primary/20">
+                              {client.photo_url ? (
+                                <AvatarImage src={client.photo_url} alt={client.full_name} />
+                              ) : null}
+                              <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
+                            </Avatar>
+                            <p className="font-medium">{client.full_name}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="text-sm flex items-center gap-1">
+                              <Phone className="h-3 w-3" />{client.phone}
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-success" onClick={() => handleWhatsApp(client.phone)}>
+                                <MessageCircle className="h-3 w-3" />
+                              </Button>
+                            </p>
+                            {client.email && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Mail className="h-3 w-3" />{client.email}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {client.birth_date ? (
+                            <div className="flex items-center gap-1">
+                              {isUpcomingBirthday(client.birth_date) && <Gift className="h-4 w-4 text-secondary" />}
+                              <span className="text-sm">
+                                {new Date(client.birth_date).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{client.preferred_barber_name || "-"}</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {renderSatisfactionStars(client.satisfaction_rating)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{client.visits}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">${client.total_spent.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={level.variant}>{level.icon} {level.label}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedClient(client); setIsDetailsOpen(true); }}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedClient(client); setIsDetailsOpen(true); }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteClient(client.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
@@ -312,8 +335,30 @@ export default function Clientes() {
 
         <TabsContent value="campaigns" className="space-y-4">
           <div className="grid gap-6 lg:grid-cols-2">
-            <BirthdayReminders clients={clients} />
-            <InactiveClients clients={clients} />
+            <BirthdayReminders clients={clients.map(c => ({
+              id: parseInt(c.id.slice(0, 8), 16),
+              name: c.full_name,
+              email: c.email || "",
+              phone: c.phone,
+              birthDate: c.birth_date || "",
+              lastVisit: c.last_visit || "",
+              visits: c.visits,
+              totalSpent: c.total_spent,
+              level: c.level,
+              points: c.points,
+            }))} />
+            <InactiveClients clients={clients.map(c => ({
+              id: parseInt(c.id.slice(0, 8), 16),
+              name: c.full_name,
+              email: c.email || "",
+              phone: c.phone,
+              birthDate: c.birth_date || "",
+              lastVisit: c.last_visit || "",
+              visits: c.visits,
+              totalSpent: c.total_spent,
+              level: c.level,
+              points: c.points,
+            }))} />
           </div>
         </TabsContent>
 
@@ -322,8 +367,44 @@ export default function Clientes() {
         </TabsContent>
       </Tabs>
 
-      <NewClientModal open={isNewClientOpen} onOpenChange={setIsNewClientOpen} onSave={handleAddClient} />
-      <ClientDetailsModal client={selectedClient} open={isDetailsOpen} onOpenChange={setIsDetailsOpen} onUpdate={handleUpdateClient} />
+      <NewClientModal 
+        open={isNewClientOpen} 
+        onOpenChange={setIsNewClientOpen} 
+        onSave={addClient}
+        uploadPhoto={uploadPhoto}
+      />
+      <ClientDetailsModal 
+        client={selectedClient ? {
+          id: parseInt(selectedClient.id.slice(0, 8), 16),
+          name: selectedClient.full_name,
+          email: selectedClient.email || "",
+          phone: selectedClient.phone,
+          birthDate: selectedClient.birth_date || "",
+          lastVisit: selectedClient.last_visit || "",
+          visits: selectedClient.visits,
+          totalSpent: selectedClient.total_spent,
+          level: selectedClient.level,
+          photo: selectedClient.photo_url || undefined,
+          preferredBarber: selectedClient.preferred_barber_name,
+          preferredServices: selectedClient.preferred_services,
+          notes: selectedClient.notes || undefined,
+          points: selectedClient.points,
+        } : null} 
+        open={isDetailsOpen} 
+        onOpenChange={setIsDetailsOpen} 
+        onUpdate={(updatedClient) => {
+          if (selectedClient) {
+            updateClient(selectedClient.id, {
+              full_name: updatedClient.name,
+              phone: updatedClient.phone,
+              email: updatedClient.email,
+              birth_date: updatedClient.birthDate,
+              notes: updatedClient.notes || "",
+              preferred_services: updatedClient.preferredServices || [],
+            });
+          }
+        }} 
+      />
     </div>
   );
 }

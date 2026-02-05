@@ -119,6 +119,81 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          birth_date: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          last_visit: string | null
+          level: string
+          notes: string | null
+          phone: string
+          photo_url: string | null
+          points: number
+          preferred_barber_id: string | null
+          preferred_services: string[] | null
+          satisfaction_rating: number | null
+          total_spent: number
+          updated_at: string
+          visits: number
+        }
+        Insert: {
+          birth_date?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          last_visit?: string | null
+          level?: string
+          notes?: string | null
+          phone: string
+          photo_url?: string | null
+          points?: number
+          preferred_barber_id?: string | null
+          preferred_services?: string[] | null
+          satisfaction_rating?: number | null
+          total_spent?: number
+          updated_at?: string
+          visits?: number
+        }
+        Update: {
+          birth_date?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          last_visit?: string | null
+          level?: string
+          notes?: string | null
+          phone?: string
+          photo_url?: string | null
+          points?: number
+          preferred_barber_id?: string | null
+          preferred_services?: string[] | null
+          satisfaction_rating?: number | null
+          total_spent?: number
+          updated_at?: string
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_preferred_barber_id_fkey"
+            columns: ["preferred_barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_preferred_barber_id_fkey"
+            columns: ["preferred_barber_id"]
+            isOneToOne: false
+            referencedRelation: "income_by_barber"
+            referencedColumns: ["barber_id"]
+          },
+        ]
+      }
       haircuts: {
         Row: {
           barber_id: string | null
