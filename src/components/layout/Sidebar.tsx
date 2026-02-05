@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -11,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Scissors,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
-  const { role } = useAuth();
+  const { role, loading } = useAuth();
 
   // Filtrar items según el rol del usuario
   const filteredNavItems = navItems.filter((item) => {
@@ -72,37 +72,62 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex flex-col gap-1 p-3 mt-4">
-        {filteredNavItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
+        {loading ? (
+          // Estado de carga
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-sidebar-foreground/50" />
+          </div>
+        ) : filteredNavItems.length === 0 ? (
+          // Sin items - posible error de rol
+          <div className="px-3 py-4 text-sm text-sidebar-foreground/50 text-center">
+            {!collapsed && "Cargando menú..."}
+          </div>
+        ) : (
+          // Mostrar items de navegación
+          filteredNavItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
 
-          const linkContent = (
-            <NavLink
-              to={item.path}
-              className={cn(
-                "nav-item",
-                isActive && "active"
-              )}
-            >
-              <Icon className="h-5 w-5 flex-shrink-0" />
-              {!collapsed && <span className="font-medium">{item.label}</span>}
-            </NavLink>
-          );
-
-          if (collapsed) {
-            return (
-              <Tooltip key={item.path} delayDuration={0}>
-                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
+            const linkContent = (
+              <NavLink
+                to={item.path}
+                className={cn(
+                  "nav-item",
+                  isActive && "active"
+                )}
+              >
+                <Icon className="h-5 w-5 flex-shrink-0" />
+                {!collapsed && <span className="font-medium">{item.label}</span>}
+              </NavLink>
             );
-          }
 
-          return <div key={item.path}>{linkContent}</div>;
-        })}
+            if (collapsed) {
+              return (
+                <Tooltip key={item.path} delayDuration={0}>
+                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                  <TooltipContent side="right" className="font-medium">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return <div key={item.path}>{linkContent}</div>;
+          })
+        )}
       </nav>
+
+      {/* Rol indicator */}
+      {!collapsed && role && (
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="px-3 py-2 rounded-lg bg-sidebar-accent/50 text-center">
+            <p className="text-xs text-sidebar-foreground/60">Sesión activa</p>
+            <p className="text-sm font-medium text-sidebar-foreground capitalize">
+              {role === "admin" ? "Administrador" : "Cajero"}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Collapse Button */}
       <Button
