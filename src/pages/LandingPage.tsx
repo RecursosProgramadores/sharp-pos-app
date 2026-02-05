@@ -4,6 +4,8 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { AboutSection } from "@/components/landing/AboutSection";
 import { TeamSection } from "@/components/landing/TeamSection";
 import { ServicesSection } from "@/components/landing/ServicesSection";
+import { ObjectivesSection } from "@/components/landing/ObjectivesSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { GallerySection } from "@/components/landing/GallerySection";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { CTASection } from "@/components/landing/CTASection";
@@ -23,6 +25,8 @@ export default function LandingPage() {
       <AboutSection />
       <TeamSection />
       <ServicesSection onReserveClick={openReservation} />
+      <ObjectivesSection />
+      <TestimonialsSection />
       <GallerySection />
       <ContactSection />
       <CTASection onReserveClick={openReservation} />
