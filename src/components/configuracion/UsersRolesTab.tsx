@@ -1,26 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   Plus,
-  Edit,
   Trash2,
   Shield,
   ShieldCheck,
-  ShieldAlert,
-  Eye,
-  Key,
-  Clock,
   Search,
-  Upload,
+  Loader2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
@@ -53,60 +48,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "@/hooks/use-toast";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
-interface User {
-  id: number;
-  name: string;
+interface SystemUser {
+  id: string;
   email: string;
-  role: string;
-  status: "active" | "inactive";
-  avatar?: string;
-  lastAccess: string;
-  linkedBarber?: string;
+  role: "admin" | "cajero";
+  created_at: string;
+  full_name: string;
 }
-
-const initialUsers: User[] = [
-  {
-    id: 1,
-    name: "Carlos Mendoza",
-    email: "carlos@barberpro.com",
-    role: "admin",
-    status: "active",
-    lastAccess: "Hace 5 minutos",
-  },
-  {
-    id: 2,
-    name: "María García",
-    email: "maria@barberpro.com",
-    role: "cashier",
-    status: "active",
-    lastAccess: "Hace 2 horas",
-  },
-  {
-    id: 3,
-    name: "Juan López",
-    email: "juan@barberpro.com",
-    role: "barber",
-    status: "active",
-    lastAccess: "Hace 1 día",
-    linkedBarber: "Juan López",
-  },
-  {
-    id: 4,
-    name: "Ana Rodríguez",
-    email: "ana@barberpro.com",
-    role: "accountant",
-    status: "inactive",
-    lastAccess: "Hace 1 semana",
-  },
-];
 
 const roles = [
   {
@@ -117,69 +79,87 @@ const roles = [
     icon: ShieldCheck,
   },
   {
-    id: "cashier",
+    id: "cajero",
     name: "Cajero",
-    description: "POS, ventas, clientes, inventario (solo lectura en reportes)",
+    description: "Barberos, POS, Inventario y Clientes",
     color: "bg-secondary text-secondary-foreground",
     icon: Shield,
   },
-  {
-    id: "barber",
-    name: "Barbero",
-    description: "Perfil personal, estadísticas y calendario propio",
-    color: "bg-info text-info-foreground",
-    icon: Users,
-  },
-  {
-    id: "accountant",
-    name: "Contador",
-    description: "Solo reportes financieros y analítica",
-    color: "bg-warning text-warning-foreground",
-    icon: ShieldAlert,
-  },
 ];
 
-const modules = [
-  "Dashboard",
-  "Barberos",
-  "Inventario",
-  "Punto de Venta",
-  "Clientes",
-  "Reportes",
-  "Configuración",
-];
-
-const permissions = ["Ver", "Crear", "Editar", "Eliminar"];
-
-const activityLog = [
-  { id: 1, date: "2024-01-15 10:30", user: "Carlos Mendoza", action: "Inició sesión", ip: "192.168.1.100" },
-  { id: 2, date: "2024-01-15 10:35", user: "Carlos Mendoza", action: "Creó venta #1234", ip: "192.168.1.100" },
-  { id: 3, date: "2024-01-15 09:00", user: "María García", action: "Inició sesión", ip: "192.168.1.101" },
-  { id: 4, date: "2024-01-15 09:15", user: "María García", action: "Editó producto 'Pomada Premium'", ip: "192.168.1.101" },
-  { id: 5, date: "2024-01-14 18:00", user: "Juan López", action: "Cerró sesión", ip: "192.168.1.102" },
-];
+const newUserSchema = z.object({
+  email: z.string().email("Email inválido").max(255),
+  password: z.string().min(6, "Mínimo 6 caracteres").max(100),
+  confirmPassword: z.string(),
+  name: z.string().min(2, "Nombre muy corto").max(100),
+  role: z.enum(["admin", "cajero"], { required_error: "Selecciona un rol" }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+});
 
 export default function UsersRolesTab() {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<SystemUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
   const [isNewUserOpen, setIsNewUserOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [newUser, setNewUser] = useState<{
-    name: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    role: string;
-    linkedBarber: string;
-    status: "active" | "inactive";
-  }>({
+  const [showPassword, setShowPassword] = useState(false);
+  const [newUser, setNewUser] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: "",
-    linkedBarber: "",
-    status: "active",
+    role: "" as "admin" | "cajero" | "",
   });
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      // Obtener los roles de usuarios
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role, created_at");
+
+      if (rolesError) {
+        console.error("Error fetching roles:", rolesError);
+        toast.error("Error al cargar usuarios");
+        return;
+      }
+
+      // Obtener perfiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name");
+
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+      }
+
+      // Combinar datos
+      const systemUsers: SystemUser[] = (rolesData || []).map((roleEntry) => {
+        const profile = profilesData?.find((p) => p.id === roleEntry.user_id);
+        return {
+          id: roleEntry.user_id,
+          email: profile?.full_name || "Usuario",
+          role: roleEntry.role as "admin" | "cajero",
+          created_at: roleEntry.created_at,
+          full_name: profile?.full_name || "Usuario",
+        };
+      });
+
+      setUsers(systemUsers);
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error inesperado");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const getRoleBadge = (roleId: string) => {
     const role = roles.find((r) => r.id === roleId);
@@ -192,484 +172,406 @@ export default function UsersRolesTab() {
     );
   };
 
-  const handleStatusChange = (userId: number, newStatus: boolean) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId
-          ? { ...user, status: newStatus ? "active" : "inactive" }
-          : user
-      )
-    );
-    toast({
-      title: newStatus ? "Usuario activado" : "Usuario desactivado",
-      description: "El estado del usuario se ha actualizado",
-    });
-  };
-
-  const handleCreateUser = () => {
-    if (newUser.password !== newUser.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Las contraseñas no coinciden",
-        variant: "destructive",
-      });
+  const handleCreateUser = async () => {
+    // Validar datos
+    const validation = newUserSchema.safeParse(newUser);
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
+      const firstError = Object.values(errors)[0]?.[0];
+      toast.error(firstError || "Datos inválidos");
       return;
     }
 
-    if (newUser.password.length < 8) {
-      toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 8 caracteres",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newId = Math.max(...users.map((u) => u.id)) + 1;
-    setUsers([
-      ...users,
-      {
-        id: newId,
-        name: newUser.name,
+    setIsCreating(true);
+    try {
+      // Crear usuario en Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
-        role: newUser.role,
-        status: newUser.status,
-        lastAccess: "Nunca",
-        linkedBarber: newUser.linkedBarber || undefined,
-      },
-    ]);
+        password: newUser.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: newUser.name,
+          },
+        },
+      });
 
-    setNewUser({
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      role: "",
-      linkedBarber: "",
-      status: "active",
-    });
-    setIsNewUserOpen(false);
+      if (authError) {
+        if (authError.message.includes("already registered")) {
+          toast.error("Este email ya está registrado");
+        } else {
+          toast.error("Error al crear usuario: " + authError.message);
+        }
+        return;
+      }
 
-    toast({
-      title: "Usuario creado",
-      description: "El nuevo usuario se ha agregado correctamente",
-    });
+      if (!authData.user) {
+        toast.error("No se pudo crear el usuario");
+        return;
+      }
+
+      // Actualizar el rol del usuario (el trigger ya crea el perfil y rol admin por defecto)
+      // Necesitamos actualizar el rol si es cajero
+      if (newUser.role === "cajero") {
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .update({ role: "cajero" })
+          .eq("user_id", authData.user.id);
+
+        if (roleError) {
+          console.error("Error updating role:", roleError);
+          // Intentar insertar si no existe
+          await supabase
+            .from("user_roles")
+            .insert({ user_id: authData.user.id, role: "cajero" });
+        }
+      }
+
+      // Actualizar el nombre en el perfil
+      await supabase
+        .from("profiles")
+        .update({ full_name: newUser.name })
+        .eq("id", authData.user.id);
+
+      toast.success("¡Usuario creado correctamente! Se envió un email de confirmación.");
+      
+      setNewUser({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "",
+      });
+      setIsNewUserOpen(false);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error inesperado al crear usuario");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  const handleDeleteUser = (userId: number) => {
-    setUsers((prev) => prev.filter((user) => user.id !== userId));
-    toast({
-      title: "Usuario eliminado",
-      description: "El usuario se ha eliminado correctamente",
-    });
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      // Solo eliminamos el rol (no podemos eliminar el usuario de auth desde el cliente)
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
+      if (error) {
+        toast.error("Error al eliminar usuario");
+        return;
+      }
+
+      toast.success("Usuario eliminado correctamente");
+      fetchUsers();
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error inesperado");
+    }
   };
 
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <Tabs defaultValue="users" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="users">Usuarios</TabsTrigger>
-        <TabsTrigger value="roles">Roles y Permisos</TabsTrigger>
-        <TabsTrigger value="activity">Log de Actividad</TabsTrigger>
-      </TabsList>
+    <div className="space-y-6">
+      <Card className="card-elevated">
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle className="font-display text-xl flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Gestión de Usuarios
+              </CardTitle>
+              <CardDescription>
+                Administra los usuarios del sistema y sus roles
+              </CardDescription>
+            </div>
+            <Dialog open={isNewUserOpen} onOpenChange={setIsNewUserOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Nuevo Cajero
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                  <DialogDescription>
+                    Completa la información del nuevo usuario
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <Avatar className="h-20 w-20">
+                      <AvatarFallback className="text-xl bg-primary text-primary-foreground">
+                        {newUser.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
 
-      {/* Users Tab */}
-      <TabsContent value="users" className="space-y-6">
-        <Card className="card-elevated">
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <CardTitle className="font-display text-xl flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  Gestión de Usuarios
-                </CardTitle>
-                <CardDescription>
-                  Administra los usuarios del sistema y sus permisos
-                </CardDescription>
-              </div>
-              <Dialog open={isNewUserOpen} onOpenChange={setIsNewUserOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Nuevo Usuario
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-                    <DialogDescription>
-                      Completa la información del nuevo usuario
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="flex justify-center">
-                      <div className="relative">
-                        <Avatar className="h-20 w-20">
-                          <AvatarFallback className="text-xl">
-                            {newUser.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .toUpperCase() || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
-                        >
-                          <Upload className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Nombre Completo *</Label>
+                    <Input
+                      value={newUser.name}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, name: e.target.value })
+                      }
+                      placeholder="Juan Pérez"
+                    />
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label>Nombre Completo</Label>
+                  <div className="space-y-2">
+                    <Label>Email *</Label>
+                    <Input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, email: e.target.value })
+                      }
+                      placeholder="usuario@email.com"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Contraseña *</Label>
+                    <div className="relative">
                       <Input
-                        value={newUser.name}
+                        type={showPassword ? "text" : "password"}
+                        value={newUser.password}
                         onChange={(e) =>
-                          setNewUser({ ...newUser, name: e.target.value })
+                          setNewUser({ ...newUser, password: e.target.value })
                         }
-                        placeholder="Juan Pérez"
+                        placeholder="Mínimo 6 caracteres"
                       />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Email (Usuario)</Label>
-                      <Input
-                        type="email"
-                        value={newUser.email}
-                        onChange={(e) =>
-                          setNewUser({ ...newUser, email: e.target.value })
-                        }
-                        placeholder="usuario@email.com"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Contraseña</Label>
-                        <Input
-                          type="password"
-                          value={newUser.password}
-                          onChange={(e) =>
-                            setNewUser({ ...newUser, password: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Confirmar</Label>
-                        <Input
-                          type="password"
-                          value={newUser.confirmPassword}
-                          onChange={(e) =>
-                            setNewUser({
-                              ...newUser,
-                              confirmPassword: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Mínimo 8 caracteres, una mayúscula y un número
-                    </p>
-
-                    <div className="space-y-2">
-                      <Label>Rol</Label>
-                      <Select
-                        value={newUser.role}
-                        onValueChange={(value) =>
-                          setNewUser({ ...newUser, role: value })
-                        }
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                        onClick={() => setShowPassword(!showPassword)}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar rol" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {roles.map((role) => (
-                            <SelectItem key={role.id} value={role.id}>
-                              <div className="flex items-center gap-2">
-                                <role.icon className="h-4 w-4" />
-                                {role.name}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {newUser.role === "barber" && (
-                      <div className="space-y-2">
-                        <Label>Vincular con Barbero</Label>
-                        <Select
-                          value={newUser.linkedBarber}
-                          onValueChange={(value) =>
-                            setNewUser({ ...newUser, linkedBarber: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar barbero" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Juan López">Juan López</SelectItem>
-                            <SelectItem value="Pedro Martínez">
-                              Pedro Martínez
-                            </SelectItem>
-                            <SelectItem value="Miguel Fernández">
-                              Miguel Fernández
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <Label>Estado Inicial</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          Inactivo
-                        </span>
-                        <Switch
-                          checked={newUser.status === "active"}
-                          onCheckedChange={(checked) =>
-                            setNewUser({
-                              ...newUser,
-                              status: checked ? "active" : "inactive",
-                            })
-                          }
-                        />
-                        <span className="text-sm">Activo</span>
-                      </div>
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
                     </div>
                   </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsNewUserOpen(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleCreateUser}>Guardar Usuario</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nombre o email..."
-                  className="pl-10 max-w-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
 
+                  <div className="space-y-2">
+                    <Label>Confirmar Contraseña *</Label>
+                    <Input
+                      type="password"
+                      value={newUser.confirmPassword}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Rol *</Label>
+                    <Select
+                      value={newUser.role}
+                      onValueChange={(value: "admin" | "cajero") =>
+                        setNewUser({ ...newUser, role: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar rol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            <div className="flex items-center gap-2">
+                              <role.icon className="h-4 w-4" />
+                              <div>
+                                <span className="font-medium">{role.name}</span>
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  - {role.description}
+                                </span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsNewUserOpen(false)}
+                    disabled={isCreating}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleCreateUser} disabled={isCreating}>
+                    {isCreating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creando...
+                      </>
+                    ) : (
+                      "Crear Usuario"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre o email..."
+                className="pl-10 max-w-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Cargando usuarios...</span>
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Usuario</TableHead>
                   <TableHead>Rol</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Último Acceso</TableHead>
+                  <TableHead>Fecha de Creación</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback>
-                            {user.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getRoleBadge(user.role)}</TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={user.status === "active"}
-                        onCheckedChange={(checked) =>
-                          handleStatusChange(user.id, checked)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {user.lastAccess}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No hay usuarios registrados
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {user.full_name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.full_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              ID: {user.id.slice(0, 8)}...
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getRoleBadge(user.role)}</TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString("es-MX", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. El usuario perderá acceso al sistema.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      </TabsContent>
+          )}
 
-      {/* Roles & Permissions Tab */}
-      <TabsContent value="roles" className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          {roles.map((role) => (
-            <Card key={role.id} className="card-elevated">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="font-display text-lg flex items-center gap-2">
+          {/* Info sobre roles */}
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {roles.map((role) => (
+              <Card key={role.id} className="border-border/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
                     <role.icon className="h-5 w-5 text-primary" />
                     {role.name}
                   </CardTitle>
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-                <CardDescription>{role.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="card-elevated">
-          <CardHeader>
-            <CardTitle className="font-display text-xl">
-              Matriz de Permisos
-            </CardTitle>
-            <CardDescription>
-              Configura los permisos granulares para roles personalizados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="w-full">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-48">Módulo</TableHead>
-                    {permissions.map((perm) => (
-                      <TableHead key={perm} className="text-center">
-                        {perm}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {modules.map((module) => (
-                    <TableRow key={module}>
-                      <TableCell className="font-medium">{module}</TableCell>
-                      {permissions.map((perm) => (
-                        <TableCell key={perm} className="text-center">
-                          <Checkbox
-                            defaultChecked={
-                              perm === "Ver" ||
-                              (perm === "Crear" && module !== "Configuración")
-                            }
-                          />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      {/* Activity Log Tab */}
-      <TabsContent value="activity" className="space-y-6">
-        <Card className="card-elevated">
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <CardTitle className="font-display text-xl flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-primary" />
-                  Log de Actividad
-                </CardTitle>
-                <CardDescription>
-                  Registro de todas las acciones de usuarios en el sistema
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Select defaultValue="all">
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Usuario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.name}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="outline">Exportar</Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha/Hora</TableHead>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Acción</TableHead>
-                  <TableHead>IP</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activityLog.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {log.date}
-                    </TableCell>
-                    <TableCell className="font-medium">{log.user}</TableCell>
-                    <TableCell>{log.action}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground font-mono">
-                      {log.ip}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{role.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {role.id === "admin" ? (
+                      <>
+                        <Badge variant="outline" className="text-xs">Dashboard</Badge>
+                        <Badge variant="outline" className="text-xs">Barberos</Badge>
+                        <Badge variant="outline" className="text-xs">Inventario</Badge>
+                        <Badge variant="outline" className="text-xs">POS</Badge>
+                        <Badge variant="outline" className="text-xs">Clientes</Badge>
+                        <Badge variant="outline" className="text-xs">Reportes</Badge>
+                        <Badge variant="outline" className="text-xs">Configuración</Badge>
+                      </>
+                    ) : (
+                      <>
+                        <Badge variant="outline" className="text-xs">Barberos</Badge>
+                        <Badge variant="outline" className="text-xs">Inventario</Badge>
+                        <Badge variant="outline" className="text-xs">POS</Badge>
+                        <Badge variant="outline" className="text-xs">Clientes</Badge>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
