@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Bell,
@@ -27,6 +28,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface HeaderProps {
   sidebarCollapsed: boolean;
@@ -41,6 +44,8 @@ const notifications = [
 export function Header({ sidebarCollapsed }: HeaderProps) {
   const [theme, setTheme] = useState<"light" | "dark" | "high-contrast">("light");
   const unreadCount = notifications.filter((n) => n.unread).length;
+  const { user, role, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleThemeChange = (newTheme: "light" | "dark" | "high-contrast") => {
     setTheme(newTheme);
@@ -48,6 +53,25 @@ export function Header({ sidebarCollapsed }: HeaderProps) {
     if (newTheme !== "light") {
       document.documentElement.classList.add(newTheme);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Sesión cerrada correctamente");
+    navigate("/auth");
+  };
+
+  const getRoleLabel = () => {
+    if (role === "admin") return "Administrador";
+    if (role === "cajero") return "Cajero";
+    return "Usuario";
+  };
+
+  const getUserName = () => {
+    if (user?.email) {
+      return user.email.split("@")[0];
+    }
+    return "Usuario";
   };
 
   return (
@@ -152,8 +176,8 @@ export function Header({ sidebarCollapsed }: HeaderProps) {
                 <User className="h-4 w-4" />
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">Admin</p>
-                <p className="text-xs text-muted-foreground">Administrador</p>
+                <p className="text-sm font-medium">{getUserName()}</p>
+                <p className="text-xs text-muted-foreground">{getRoleLabel()}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
@@ -165,12 +189,17 @@ export function Header({ sidebarCollapsed }: HeaderProps) {
               <User className="mr-2 h-4 w-4" />
               Mi Perfil
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Configuración
-            </DropdownMenuItem>
+            {role === "admin" && (
+              <DropdownMenuItem onClick={() => navigate("/configuracion")}>
+                <Settings className="mr-2 h-4 w-4" />
+                Configuración
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
+            <DropdownMenuItem 
+              className="text-destructive focus:text-destructive"
+              onClick={handleSignOut}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Cerrar Sesión
             </DropdownMenuItem>

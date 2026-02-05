@@ -15,15 +15,23 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Users, label: "Barberos", path: "/barberos" },
-  { icon: Package, label: "Inventario", path: "/inventario" },
-  { icon: ShoppingCart, label: "Punto de Venta", path: "/pos" },
-  { icon: UserCheck, label: "Clientes", path: "/clientes" },
-  { icon: BarChart3, label: "Reportes", path: "/reportes" },
-  { icon: Settings, label: "Configuración", path: "/configuracion" },
+interface NavItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  roles: ("admin" | "cajero")[];
+}
+
+const navItems: NavItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/", roles: ["admin"] },
+  { icon: Users, label: "Barberos", path: "/barberos", roles: ["admin", "cajero"] },
+  { icon: Package, label: "Inventario", path: "/inventario", roles: ["admin", "cajero"] },
+  { icon: ShoppingCart, label: "Punto de Venta", path: "/pos", roles: ["admin", "cajero"] },
+  { icon: UserCheck, label: "Clientes", path: "/clientes", roles: ["admin", "cajero"] },
+  { icon: BarChart3, label: "Reportes", path: "/reportes", roles: ["admin"] },
+  { icon: Settings, label: "Configuración", path: "/configuracion", roles: ["admin"] },
 ];
 
 interface SidebarProps {
@@ -33,6 +41,13 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
+  const { role } = useAuth();
+
+  // Filtrar items según el rol del usuario
+  const filteredNavItems = navItems.filter((item) => {
+    if (!role) return false;
+    return item.roles.includes(role);
+  });
 
   return (
     <aside
@@ -57,7 +72,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex flex-col gap-1 p-3 mt-4">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
 
