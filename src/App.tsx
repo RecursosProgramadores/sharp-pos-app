@@ -6,16 +6,22 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { MainLayout } from "./components/layout/MainLayout";
+
+// Public pages
+import LandingPage from "./pages/LandingPage";
+import Auth from "./pages/Auth";
+import Setup from "./pages/Setup";
+import NotFound from "./pages/NotFound";
+
+// Admin pages
 import Dashboard from "./pages/Dashboard";
+import Reservas from "./pages/Reservas";
 import Barberos from "./pages/Barberos";
 import Inventario from "./pages/Inventario";
 import POS from "./pages/POS";
 import Clientes from "./pages/Clientes";
 import Reportes from "./pages/Reportes";
 import Configuracion from "./pages/Configuracion";
-import Auth from "./pages/Auth";
-import Setup from "./pages/Setup";
-import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -27,13 +33,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Public routes */}
+            {/* Public routes - Landing Page */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/setup" element={<Setup />} />
             
-            {/* Protected routes */}
+            {/* Admin routes - Protected */}
             <Route
-              path="/"
+              path="/admin"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <MainLayout>
@@ -43,7 +50,17 @@ const App = () => (
               }
             />
             <Route
-              path="/barberos"
+              path="/admin/reservas"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "cajero"]}>
+                  <MainLayout>
+                    <Reservas />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/barberos"
               element={
                 <ProtectedRoute allowedRoles={["admin", "cajero"]}>
                   <MainLayout>
@@ -53,7 +70,7 @@ const App = () => (
               }
             />
             <Route
-              path="/inventario"
+              path="/admin/inventario"
               element={
                 <ProtectedRoute allowedRoles={["admin", "cajero"]}>
                   <MainLayout>
@@ -63,7 +80,7 @@ const App = () => (
               }
             />
             <Route
-              path="/pos"
+              path="/admin/pos"
               element={
                 <ProtectedRoute allowedRoles={["admin", "cajero"]}>
                   <MainLayout>
@@ -73,7 +90,7 @@ const App = () => (
               }
             />
             <Route
-              path="/clientes"
+              path="/admin/clientes"
               element={
                 <ProtectedRoute allowedRoles={["admin", "cajero"]}>
                   <MainLayout>
@@ -83,7 +100,7 @@ const App = () => (
               }
             />
             <Route
-              path="/reportes"
+              path="/admin/reportes"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <MainLayout>
@@ -93,7 +110,7 @@ const App = () => (
               }
             />
             <Route
-              path="/configuracion"
+              path="/admin/configuracion"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <MainLayout>

@@ -28,7 +28,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/");
+      navigate("/admin");
     }
   }, [user, loading, navigate]);
 
@@ -64,7 +64,7 @@ export default function Auth() {
       }
 
       toast.success("¡Bienvenido!");
-      navigate("/");
+      navigate("/admin");
     } catch (error) {
       toast.error("Error inesperado al iniciar sesión");
     } finally {

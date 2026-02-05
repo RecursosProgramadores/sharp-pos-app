@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Scissors,
   Loader2,
+  CalendarCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,13 +26,14 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/", roles: ["admin"] },
-  { icon: Users, label: "Barberos", path: "/barberos", roles: ["admin", "cajero"] },
-  { icon: Package, label: "Inventario", path: "/inventario", roles: ["admin", "cajero"] },
-  { icon: ShoppingCart, label: "Punto de Venta", path: "/pos", roles: ["admin", "cajero"] },
-  { icon: UserCheck, label: "Clientes", path: "/clientes", roles: ["admin", "cajero"] },
-  { icon: BarChart3, label: "Reportes", path: "/reportes", roles: ["admin"] },
-  { icon: Settings, label: "Configuración", path: "/configuracion", roles: ["admin"] },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/admin", roles: ["admin"] },
+  { icon: CalendarCheck, label: "Reservas", path: "/admin/reservas", roles: ["admin", "cajero"] },
+  { icon: Users, label: "Barberos", path: "/admin/barberos", roles: ["admin", "cajero"] },
+  { icon: Package, label: "Inventario", path: "/admin/inventario", roles: ["admin", "cajero"] },
+  { icon: ShoppingCart, label: "Punto de Venta", path: "/admin/pos", roles: ["admin", "cajero"] },
+  { icon: UserCheck, label: "Clientes", path: "/admin/clientes", roles: ["admin", "cajero"] },
+  { icon: BarChart3, label: "Reportes", path: "/admin/reportes", roles: ["admin"] },
+  { icon: Settings, label: "Configuración", path: "/admin/configuracion", roles: ["admin"] },
 ];
 
 interface SidebarProps {
