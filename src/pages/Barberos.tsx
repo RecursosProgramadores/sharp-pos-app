@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Search, Filter, SortAsc } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Search, Filter, SortAsc, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,106 +17,11 @@ import { ScheduleTab } from "@/components/barberos/ScheduleTab";
 import { AttendanceTab } from "@/components/barberos/AttendanceTab";
 import { StatsTab } from "@/components/barberos/StatsTab";
 import { toast } from "sonner";
-
-const barbersData: Barber[] = [
-  {
-    id: 1,
-    name: "Miguel Ángel Rodríguez",
-    email: "miguel@barberpro.com",
-    phone: "+52 55 1234 5678",
-    dni: "12345678A",
-    status: "active",
-    specialty: "Corte Clásico",
-    hireDate: "2022-03-15",
-    services: [
-      { name: "Corte Clásico", price: 30, duration: 25 },
-      { name: "Fade Degradado", price: 40, duration: 35 },
-      { name: "Barba Completa", price: 25, duration: 20 },
-    ],
-    rating: 4.8,
-    reviewCount: 156,
-    totalCuts: 1248,
-    revenue: 37440,
-  },
-  {
-    id: 2,
-    name: "Juan Carlos López",
-    email: "juan@barberpro.com",
-    phone: "+52 55 2345 6789",
-    dni: "23456789B",
-    status: "active",
-    specialty: "Fade",
-    hireDate: "2021-08-20",
-    services: [
-      { name: "Fade Degradado", price: 40, duration: 35 },
-      { name: "Diseño", price: 50, duration: 45 },
-      { name: "Corte + Diseño", price: 65, duration: 50 },
-    ],
-    rating: 4.9,
-    reviewCount: 203,
-    totalCuts: 1564,
-    revenue: 54740,
-  },
-  {
-    id: 3,
-    name: "Pedro Sánchez García",
-    email: "pedro@barberpro.com",
-    phone: "+52 55 3456 7890",
-    dni: "34567890C",
-    status: "active",
-    specialty: "Barba",
-    hireDate: "2023-01-10",
-    services: [
-      { name: "Barba Completa", price: 25, duration: 20 },
-      { name: "Afeitado Tradicional", price: 30, duration: 25 },
-      { name: "Tratamiento Barba", price: 35, duration: 30 },
-    ],
-    rating: 4.7,
-    reviewCount: 89,
-    totalCuts: 687,
-    revenue: 18549,
-  },
-  {
-    id: 4,
-    name: "Roberto Díaz Hernández",
-    email: "roberto@barberpro.com",
-    phone: "+52 55 4567 8901",
-    dni: "45678901D",
-    status: "vacation",
-    specialty: "Mixto",
-    hireDate: "2020-11-05",
-    services: [
-      { name: "Corte Clásico", price: 30, duration: 25 },
-      { name: "Fade Degradado", price: 40, duration: 35 },
-      { name: "Corte + Barba", price: 45, duration: 40 },
-      { name: "Diseño", price: 50, duration: 45 },
-    ],
-    rating: 4.6,
-    reviewCount: 312,
-    totalCuts: 2156,
-    revenue: 75460,
-  },
-  {
-    id: 5,
-    name: "Luis Gómez Martínez",
-    email: "luis@barberpro.com",
-    phone: "+52 55 5678 9012",
-    dni: "56789012E",
-    status: "inactive",
-    specialty: "Diseño",
-    hireDate: "2023-06-01",
-    services: [
-      { name: "Diseño", price: 50, duration: 45 },
-      { name: "Corte + Diseño", price: 65, duration: 50 },
-    ],
-    rating: 4.5,
-    reviewCount: 45,
-    totalCuts: 234,
-    revenue: 11700,
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Barberos() {
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
@@ -125,11 +30,64 @@ export default function Barberos() {
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const filteredBarbers = barbersData
+  // Cargar barberos desde la base de datos
+  const fetchBarbers = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('barbers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching barbers:', error);
+        toast.error("Error al cargar los barberos");
+        return;
+      }
+
+      // Transformar datos de la BD al formato del frontend
+      const transformedBarbers: Barber[] = (data || []).map((barber) => ({
+        id: barber.id,
+        name: barber.full_name,
+        email: barber.email || "",
+        phone: barber.phone || "",
+        dni: barber.dni || "",
+        status: barber.active ? "active" : "inactive",
+        specialty: barber.specialty || "Mixto",
+        hireDate: barber.hire_date || barber.created_at?.split('T')[0],
+        photoUrl: barber.photo_url,
+        services: [],
+        rating: 4.5,
+        reviewCount: 0,
+        totalCuts: 0,
+        revenue: 0,
+        // Campos de pago
+        commissionPercentage: barber.commission_percentage,
+        lunchIncluded: barber.lunch_included,
+        lunchAmount: barber.lunch_amount,
+        incentivesEnabled: barber.incentives_enabled,
+        incentivePerCut: barber.incentive_per_cut,
+        incentiveThreshold: barber.incentive_threshold,
+      }));
+
+      setBarbers(transformedBarbers);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("Error inesperado al cargar");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBarbers();
+  }, []);
+
+  const filteredBarbers = barbers
     .filter((barber) => {
       const matchesSearch =
         barber.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        barber.dni.toLowerCase().includes(searchTerm.toLowerCase());
+        (barber.dni && barber.dni.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesStatus = statusFilter === "all" || barber.status === statusFilter;
       const matchesSpecialty = specialtyFilter === "all" || barber.specialty === specialtyFilter;
       return matchesSearch && matchesStatus && matchesSpecialty;
@@ -139,9 +97,9 @@ export default function Barberos() {
         case "name":
           return a.name.localeCompare(b.name);
         case "cuts":
-          return b.totalCuts - a.totalCuts;
+          return (b.totalCuts || 0) - (a.totalCuts || 0);
         case "rating":
-          return b.rating - a.rating;
+          return (b.rating || 0) - (a.rating || 0);
         default:
           return 0;
       }
@@ -156,13 +114,26 @@ export default function Barberos() {
     toast.info(`Editando: ${barber.name}`);
   };
 
-  const handleToggleStatus = (barber: Barber) => {
-    const newStatus = barber.status === "active" ? "inactive" : "active";
-    toast.success(`${barber.name} ahora está ${newStatus === "active" ? "activo" : "inactivo"}`);
+  const handleToggleStatus = async (barber: Barber) => {
+    const newStatus = barber.status === "active" ? false : true;
+    
+    const { error } = await supabase
+      .from('barbers')
+      .update({ active: newStatus })
+      .eq('id', barber.id);
+
+    if (error) {
+      toast.error("Error al cambiar estado");
+      return;
+    }
+
+    toast.success(`${barber.name} ahora está ${newStatus ? "activo" : "inactivo"}`);
+    fetchBarbers();
   };
 
-  const handleSaveNewBarber = (barber: any) => {
-    console.log("New barber:", barber);
+  const handleSaveNewBarber = () => {
+    // Recargar la lista después de guardar
+    fetchBarbers();
   };
 
   return (
@@ -247,25 +218,38 @@ export default function Barberos() {
             </div>
           </div>
 
-          {/* Barbers Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredBarbers.map((barber) => (
-              <BarberCard
-                key={barber.id}
-                barber={barber}
-                onViewDetails={handleViewDetails}
-                onEdit={handleEdit}
-                onToggleStatus={handleToggleStatus}
-              />
-            ))}
-          </div>
-
-          {filteredBarbers.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                No se encontraron barberos con los filtros seleccionados
-              </p>
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Cargando barberos...</span>
             </div>
+          ) : (
+            <>
+              {/* Barbers Grid */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredBarbers.map((barber) => (
+                  <BarberCard
+                    key={barber.id}
+                    barber={barber}
+                    onViewDetails={handleViewDetails}
+                    onEdit={handleEdit}
+                    onToggleStatus={handleToggleStatus}
+                  />
+                ))}
+              </div>
+
+              {filteredBarbers.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">
+                    {barbers.length === 0 
+                      ? "No hay barberos registrados. ¡Agrega el primero!"
+                      : "No se encontraron barberos con los filtros seleccionados"
+                    }
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
 
