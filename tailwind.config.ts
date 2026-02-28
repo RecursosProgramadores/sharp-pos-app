@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Bebas Neue', 'sans-serif'],
+        display: ['Inter Tight', 'Inter', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
@@ -73,6 +73,10 @@ export default {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
+        "neon-cyan": "hsl(var(--neon-cyan))",
+        "neon-purple": "hsl(var(--neon-purple))",
+        "landing-bg": "hsl(var(--landing-bg))",
+        "landing-surface": "hsl(var(--landing-surface))",
       },
       borderRadius: {
         lg: "var(--radius)",
