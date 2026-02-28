@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      barber_attendance: {
+        Row: {
+          attendance_date: string
+          barber_id: string
+          created_at: string
+          entry_time: string | null
+          exit_time: string | null
+          id: string
+          notes: string | null
+          scheduled_end: string | null
+          scheduled_start: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date?: string
+          barber_id: string
+          created_at?: string
+          entry_time?: string | null
+          exit_time?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          barber_id?: string
+          created_at?: string
+          entry_time?: string | null
+          exit_time?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_attendance_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_attendance_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "income_by_barber"
+            referencedColumns: ["barber_id"]
+          },
+        ]
+      }
       barber_schedules: {
         Row: {
           barber_id: string
@@ -118,6 +175,110 @@ export type Database = {
           work_type?: string | null
         }
         Relationships: []
+      }
+      chair_rental_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+          rental_id: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          rental_id: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          rental_id?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chair_rental_payments_rental_id_fkey"
+            columns: ["rental_id"]
+            isOneToOne: false
+            referencedRelation: "chair_rentals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chair_rentals: {
+        Row: {
+          barber_id: string
+          chair_number: number
+          contract_notes: string | null
+          created_at: string
+          deposit_amount: number | null
+          end_date: string | null
+          id: string
+          payment_day: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          weekly_rate: number
+        }
+        Insert: {
+          barber_id: string
+          chair_number: number
+          contract_notes?: string | null
+          created_at?: string
+          deposit_amount?: number | null
+          end_date?: string | null
+          id?: string
+          payment_day?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          weekly_rate?: number
+        }
+        Update: {
+          barber_id?: string
+          chair_number?: number
+          contract_notes?: string | null
+          created_at?: string
+          deposit_amount?: number | null
+          end_date?: string | null
+          id?: string
+          payment_day?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          weekly_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chair_rentals_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chair_rentals_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "income_by_barber"
+            referencedColumns: ["barber_id"]
+          },
+        ]
       }
       clients: {
         Row: {
