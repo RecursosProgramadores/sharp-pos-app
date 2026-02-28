@@ -1,37 +1,30 @@
-import { useState } from "react";
-import { Navbar } from "@/components/landing/Navbar";
-import { HeroSection } from "@/components/landing/HeroSection";
-import { AboutSection } from "@/components/landing/AboutSection";
-import { TeamSection } from "@/components/landing/TeamSection";
-import { ServicesSection } from "@/components/landing/ServicesSection";
-import { ObjectivesSection } from "@/components/landing/ObjectivesSection";
-import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
-import { GallerySection } from "@/components/landing/GallerySection";
-import { ContactSection } from "@/components/landing/ContactSection";
-import { CTASection } from "@/components/landing/CTASection";
-import { Footer } from "@/components/landing/Footer";
-import { ReservationModal } from "@/components/landing/ReservationModal";
+import { useNavigate } from "react-router-dom";
+import { LandingNavbar } from "@/components/landing/LandingNavbar";
+import { LandingHero } from "@/components/landing/LandingHero";
+import { TrustSection } from "@/components/landing/TrustSection";
+import { ProblemsSection } from "@/components/landing/ProblemsSection";
+import { FeaturesSection } from "@/components/landing/FeaturesSection";
+import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
+import { PricingSection } from "@/components/landing/PricingSection";
+import { FinalCTA } from "@/components/landing/FinalCTA";
+import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export default function LandingPage() {
-  const [isReservationOpen, setIsReservationOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const openReservation = () => setIsReservationOpen(true);
-  const closeReservation = () => setIsReservationOpen(false);
+  const handleTrialClick = () => navigate("/auth");
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar onReserveClick={openReservation} />
-      <HeroSection onReserveClick={openReservation} />
-      <AboutSection />
-      <TeamSection />
-      <ServicesSection onReserveClick={openReservation} />
-      <ObjectivesSection />
-      <TestimonialsSection />
-      <GallerySection />
-      <ContactSection />
-      <CTASection onReserveClick={openReservation} />
-      <Footer />
-      <ReservationModal open={isReservationOpen} onClose={closeReservation} />
+    <div className="min-h-screen" style={{ background: "#0a0e17", color: "#fff" }}>
+      <LandingNavbar onTrialClick={handleTrialClick} />
+      <LandingHero onTrialClick={handleTrialClick} />
+      <TrustSection />
+      <ProblemsSection />
+      <FeaturesSection />
+      <LandingTestimonials />
+      <PricingSection onTrialClick={handleTrialClick} />
+      <FinalCTA onTrialClick={handleTrialClick} />
+      <LandingFooter />
     </div>
   );
 }
