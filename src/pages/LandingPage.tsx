@@ -20,7 +20,7 @@ export default function LandingPage() {
   const closeReservation = () => setIsReservationOpen(false);
 
   return (
-    <div className="min-h-screen" style={{ background: "#0a0c12", color: "#fff" }}>
+    <div className="min-h-screen bg-barber-bg text-barber-text">
       <LandingNavbar onReserveClick={openReservation} />
       <LandingHero onReserveClick={openReservation} />
       <TrustSection />

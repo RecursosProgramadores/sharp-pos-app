@@ -78,6 +78,13 @@ export default {
         "neon-cyan": "hsl(var(--neon-cyan))",
         "landing-bg": "hsl(var(--landing-bg))",
         "landing-surface": "hsl(var(--landing-surface))",
+        "barber-red": "hsl(var(--barber-red))",
+        "barber-orange": "hsl(var(--barber-orange))",
+        "barber-bg": "hsl(var(--barber-bg))",
+        "barber-card": "hsl(var(--barber-card))",
+        "barber-border": "hsl(var(--barber-border))",
+        "barber-text": "hsl(var(--barber-text))",
+        "barber-muted": "hsl(var(--barber-muted))",
       },
       borderRadius: {
         lg: "var(--radius)",
