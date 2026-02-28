@@ -276,33 +276,48 @@ export type Database = {
         Row: {
           active: boolean
           barcode: string | null
+          category: string
           created_at: string
+          description: string | null
           id: string
+          min_stock: number
           name: string
+          photo_url: string | null
           purchase_price: number
           sale_price: number
+          sku: string | null
           stock: number
           updated_at: string
         }
         Insert: {
           active?: boolean
           barcode?: string | null
+          category?: string
           created_at?: string
+          description?: string | null
           id?: string
+          min_stock?: number
           name: string
+          photo_url?: string | null
           purchase_price?: number
           sale_price: number
+          sku?: string | null
           stock?: number
           updated_at?: string
         }
         Update: {
           active?: boolean
           barcode?: string | null
+          category?: string
           created_at?: string
+          description?: string | null
           id?: string
+          min_stock?: number
           name?: string
+          photo_url?: string | null
           purchase_price?: number
           sale_price?: number
+          sku?: string | null
           stock?: number
           updated_at?: string
         }
@@ -535,6 +550,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          reason: string | null
+          responsible: string | null
+          stock_after: number
+          stock_before: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity: number
+          reason?: string | null
+          responsible?: string | null
+          stock_after?: number
+          stock_before?: number
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          responsible?: string | null
+          stock_after?: number
+          stock_before?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "top_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

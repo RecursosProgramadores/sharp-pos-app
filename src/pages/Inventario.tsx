@@ -5,26 +5,21 @@ import { Badge } from "@/components/ui/badge";
 import { ProductsTab } from "@/components/inventario/ProductsTab";
 import { MovementsTab } from "@/components/inventario/MovementsTab";
 import { AlertsTab } from "@/components/inventario/AlertsTab";
+import { useProducts } from "@/hooks/useInventory";
 
 export default function Inventario() {
   const [activeTab, setActiveTab] = useState("products");
+  const { data: products = [] } = useProducts();
 
-  // Mock counts for badges
-  const lowStockCount = 4;
+  const lowStockCount = products.filter(p => p.active && (p.stock === 0 || p.stock < p.min_stock)).length;
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div>
-        <h1 className="font-display text-3xl md:text-4xl tracking-tight">
-          Inventario
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Gestiona productos, movimientos y alertas de stock
-        </p>
+        <h1 className="font-display text-3xl md:text-4xl tracking-tight">Inventario</h1>
+        <p className="text-muted-foreground mt-1">Gestiona productos, movimientos y alertas de stock</p>
       </div>
 
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="products" className="gap-2">
@@ -46,17 +41,9 @@ export default function Inventario() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="products" className="mt-6">
-          <ProductsTab />
-        </TabsContent>
-
-        <TabsContent value="movements" className="mt-6">
-          <MovementsTab />
-        </TabsContent>
-
-        <TabsContent value="alerts" className="mt-6">
-          <AlertsTab />
-        </TabsContent>
+        <TabsContent value="products" className="mt-6"><ProductsTab /></TabsContent>
+        <TabsContent value="movements" className="mt-6"><MovementsTab /></TabsContent>
+        <TabsContent value="alerts" className="mt-6"><AlertsTab /></TabsContent>
       </Tabs>
     </div>
   );
