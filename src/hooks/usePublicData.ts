@@ -61,12 +61,10 @@ export async function createReservation(reservationData: {
   reservation_date: string;
   reservation_time: string;
 }) {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("reservations")
-    .insert([reservationData])
-    .select()
-    .single();
+    .insert([reservationData]);
 
   if (error) throw error;
-  return data;
+  return true;
 }
