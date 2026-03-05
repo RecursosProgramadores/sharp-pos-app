@@ -4,10 +4,12 @@ import {
   Plus,
   Edit,
   Trash2,
-  Copy,
-  GripVertical,
-  Package,
-  Percent,
+  Star,
+  Clock,
+  Search,
+  Loader2,
+  Save,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +39,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -46,173 +47,199 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-interface Service {
-  id: number;
+const CATEGORIES = ["Cortes", "Degradados", "Ondulados", "Tintes", "Otros Servicios"];
+
+interface ServiceForm {
   name: string;
   description: string;
-  duration: number;
+  duration_minutes: number;
   price: number;
   category: string;
-  active: boolean;
-  order: number;
+  is_popular: boolean;
+  is_active: boolean;
 }
 
-interface Combo {
-  id: number;
-  name: string;
-  services: number[];
-  regularPrice: number;
-  comboPrice: number;
-  active: boolean;
-}
-
-const initialServices: Service[] = [
-  { id: 1, name: "Corte Clásico", description: "Corte tradicional con tijera y máquina", duration: 30, price: 15, category: "Cortes", active: true, order: 1 },
-  { id: 2, name: "Fade", description: "Degradado moderno con líneas limpias", duration: 45, price: 20, category: "Cortes", active: true, order: 2 },
-  { id: 3, name: "Barba", description: "Perfilado y recorte de barba", duration: 20, price: 12, category: "Barba", active: true, order: 3 },
-  { id: 4, name: "Diseño", description: "Diseños personalizados con máquina", duration: 30, price: 18, category: "Cortes", active: true, order: 4 },
-  { id: 5, name: "Tratamiento Capilar", description: "Tratamiento hidratante y nutritivo", duration: 45, price: 30, category: "Tratamientos", active: true, order: 5 },
-  { id: 6, name: "Coloración", description: "Tinte profesional para cabello", duration: 60, price: 40, category: "Coloración", active: true, order: 6 },
-  { id: 7, name: "Corte Niño", description: "Corte para menores de 12 años", duration: 25, price: 12, category: "Infantil", active: true, order: 7 },
-];
-
-const initialCombos: Combo[] = [
-  { id: 1, name: "Corte + Barba", services: [1, 3], regularPrice: 27, comboPrice: 25, active: true },
-  { id: 2, name: "Fade + Barba + Diseño", services: [2, 3, 4], regularPrice: 50, comboPrice: 42, active: true },
-];
-
-const categories = ["Cortes", "Barba", "Tratamientos", "Coloración", "Infantil"];
+const emptyForm: ServiceForm = {
+  name: "",
+  description: "",
+  duration_minutes: 30,
+  price: 0,
+  category: "Cortes",
+  is_popular: false,
+  is_active: true,
+};
 
 export default function ServicesTab() {
-  const [services, setServices] = useState<Service[]>(initialServices);
-  const [combos, setCombos] = useState<Combo[]>(initialCombos);
-  const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
-  const [isNewComboOpen, setIsNewComboOpen] = useState(false);
-  const [priceSettings, setPriceSettings] = useState({
-    priceByBarber: false,
-    studentDiscount: true,
-    studentDiscountPercent: 10,
-    childDiscount: true,
-    childDiscountPercent: 15,
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [form, setForm] = useState<ServiceForm>(emptyForm);
+
+  // Fetch services
+  const { data: services = [], isLoading } = useQuery({
+    queryKey: ["admin-services"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .order("category")
+        .order("price");
+      if (error) throw error;
+      return data;
+    },
   });
 
-  const [newService, setNewService] = useState({
-    name: "",
-    description: "",
-    duration: 30,
-    price: 0,
-    category: "",
+  // Create
+  const createMutation = useMutation({
+    mutationFn: async (svc: ServiceForm) => {
+      const { error } = await supabase.from("services").insert([svc]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["public-services"] });
+      toast({ title: "Servicio creado", description: "El servicio se agregó correctamente." });
+      closeDialog();
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const [newCombo, setNewCombo] = useState({
-    name: "",
-    services: [] as number[],
-    comboPrice: 0,
+  // Update
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<ServiceForm> }) => {
+      const { error } = await supabase.from("services").update(data).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["public-services"] });
+      toast({ title: "Servicio actualizado" });
+      closeDialog();
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const handleToggleService = (id: number) => {
-    setServices((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
-    );
+  // Delete
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Nullify references first
+      await supabase.from("reservations").update({ service_id: null }).eq("service_id", id);
+      const { error } = await supabase.from("services").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["public-services"] });
+      toast({ title: "Servicio eliminado" });
+      setDeleteDialogOpen(false);
+      setDeletingId(null);
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  // Toggle active
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from("services").update({ is_active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["public-services"] });
+    },
+  });
+
+  // Toggle popular
+  const togglePopularMutation = useMutation({
+    mutationFn: async ({ id, is_popular }: { id: string; is_popular: boolean }) => {
+      const { error } = await supabase.from("services").update({ is_popular }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["public-services"] });
+    },
+  });
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
   };
 
-  const handleDeleteService = (id: number) => {
-    setServices((prev) => prev.filter((s) => s.id !== id));
-    toast({
-      title: "Servicio eliminado",
-      description: "El servicio se ha eliminado correctamente",
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (svc: typeof services[0]) => {
+    setEditingId(svc.id);
+    setForm({
+      name: svc.name,
+      description: svc.description || "",
+      duration_minutes: svc.duration_minutes,
+      price: svc.price,
+      category: svc.category,
+      is_popular: svc.is_popular ?? false,
+      is_active: svc.is_active ?? true,
     });
+    setDialogOpen(true);
   };
 
-  const handleDuplicateService = (service: Service) => {
-    const newId = Math.max(...services.map((s) => s.id)) + 1;
-    setServices([
-      ...services,
-      {
-        ...service,
-        id: newId,
-        name: `${service.name} (Copia)`,
-        order: services.length + 1,
-      },
-    ]);
-    toast({
-      title: "Servicio duplicado",
-      description: "Se ha creado una copia del servicio",
-    });
+  const handleSave = () => {
+    if (!form.name.trim() || form.price <= 0) {
+      toast({ title: "Campos requeridos", description: "Nombre y precio son obligatorios.", variant: "destructive" });
+      return;
+    }
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: form });
+    } else {
+      createMutation.mutate(form);
+    }
   };
 
-  const handleCreateService = () => {
-    const newId = Math.max(...services.map((s) => s.id)) + 1;
-    setServices([
-      ...services,
-      {
-        id: newId,
-        ...newService,
-        active: true,
-        order: services.length + 1,
-      },
-    ]);
-    setNewService({ name: "", description: "", duration: 30, price: 0, category: "" });
-    setIsNewServiceOpen(false);
-    toast({
-      title: "Servicio creado",
-      description: "El nuevo servicio se ha agregado correctamente",
-    });
+  const confirmDelete = (id: string) => {
+    setDeletingId(id);
+    setDeleteDialogOpen(true);
   };
 
-  const handleCreateCombo = () => {
-    const regularPrice = newCombo.services.reduce((sum, id) => {
-      const service = services.find((s) => s.id === id);
-      return sum + (service?.price || 0);
-    }, 0);
-
-    const newId = Math.max(...combos.map((c) => c.id), 0) + 1;
-    setCombos([
-      ...combos,
-      {
-        id: newId,
-        name: newCombo.name,
-        services: newCombo.services,
-        regularPrice,
-        comboPrice: newCombo.comboPrice,
-        active: true,
-      },
-    ]);
-    setNewCombo({ name: "", services: [], comboPrice: 0 });
-    setIsNewComboOpen(false);
-    toast({
-      title: "Combo creado",
-      description: "El nuevo combo se ha agregado correctamente",
-    });
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${minutes} min`;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return m > 0 ? `${h}h ${m}min` : `${h}h`;
   };
 
-  const handleToggleComboService = (serviceId: number) => {
-    setNewCombo((prev) => ({
-      ...prev,
-      services: prev.services.includes(serviceId)
-        ? prev.services.filter((id) => id !== serviceId)
-        : [...prev.services, serviceId],
-    }));
-  };
+  // Filter
+  const filtered = services.filter((s) => {
+    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase());
+    const matchCategory = filterCategory === "all" || s.category === filterCategory;
+    return matchSearch && matchCategory;
+  });
 
-  const calculateComboRegularPrice = () => {
-    return newCombo.services.reduce((sum, id) => {
-      const service = services.find((s) => s.id === id);
-      return sum + (service?.price || 0);
-    }, 0);
-  };
-
-  const calculateSavings = (combo: Combo) => {
-    const savings = combo.regularPrice - combo.comboPrice;
-    const percent = ((savings / combo.regularPrice) * 100).toFixed(0);
-    return { savings, percent };
-  };
+  const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-6">
-      {/* Services List */}
       <Card className="card-elevated">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -222,426 +249,247 @@ export default function ServicesTab() {
                 Gestión de Servicios
               </CardTitle>
               <CardDescription>
-                Administra los servicios disponibles en tu barbería
+                {services.length} servicios · {services.filter((s) => s.is_active).length} activos
               </CardDescription>
             </div>
-            <Dialog open={isNewServiceOpen} onOpenChange={setIsNewServiceOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nuevo Servicio
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Crear Nuevo Servicio</DialogTitle>
-                  <DialogDescription>
-                    Completa la información del nuevo servicio
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Nombre del Servicio</Label>
-                    <Input
-                      value={newService.name}
-                      onChange={(e) =>
-                        setNewService({ ...newService, name: e.target.value })
-                      }
-                      placeholder="Ej: Corte Premium"
-                    />
-                  </div>
+            <Button className="gap-2" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo Servicio
+            </Button>
+          </div>
 
-                  <div className="space-y-2">
-                    <Label>Descripción Corta</Label>
-                    <Textarea
-                      value={newService.description}
-                      onChange={(e) =>
-                        setNewService({ ...newService, description: e.target.value })
-                      }
-                      placeholder="Descripción breve del servicio"
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Duración (minutos)</Label>
-                      <Input
-                        type="number"
-                        value={newService.duration}
-                        onChange={(e) =>
-                          setNewService({
-                            ...newService,
-                            duration: parseInt(e.target.value) || 0,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Precio Base ($)</Label>
-                      <Input
-                        type="number"
-                        value={newService.price}
-                        onChange={(e) =>
-                          setNewService({
-                            ...newService,
-                            price: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Categoría</Label>
-                    <Select
-                      value={newService.category}
-                      onValueChange={(value) =>
-                        setNewService({ ...newService, category: value })
-                      }
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar servicio..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las categorías</SelectItem>
+                {CATEGORIES.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No se encontraron servicios.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Servicio</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead className="text-right">Duración</TableHead>
+                    <TableHead className="text-right">Precio</TableHead>
+                    <TableHead className="text-center">Popular</TableHead>
+                    <TableHead className="text-center">Activo</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((service) => (
+                    <TableRow
+                      key={service.id}
+                      className={!service.is_active ? "opacity-50" : ""}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsNewServiceOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleCreateService}>Guardar Servicio</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8"></TableHead>
-                <TableHead>Servicio</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead className="text-right">Duración</TableHead>
-                <TableHead className="text-right">Precio</TableHead>
-                <TableHead className="text-center">Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {services.map((service) => (
-                <TableRow key={service.id} className={!service.active ? "opacity-50" : ""}>
-                  <TableCell>
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{service.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {service.description}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{service.category}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">{service.duration} min</TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${service.price}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch
-                      checked={service.active}
-                      onCheckedChange={() => handleToggleService(service.id)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDuplicateService(service)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteService(service.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Combos Section */}
-      <Card className="card-elevated">
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <CardTitle className="font-display text-xl flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                Paquetes / Combos
-              </CardTitle>
-              <CardDescription>
-                Crea combinaciones de servicios con precio especial
-              </CardDescription>
-            </div>
-            <Dialog open={isNewComboOpen} onOpenChange={setIsNewComboOpen}>
-              <DialogTrigger asChild>
-                <Button variant="secondary" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nuevo Combo
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Crear Nuevo Combo</DialogTitle>
-                  <DialogDescription>
-                    Selecciona los servicios y define el precio especial
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Nombre del Combo</Label>
-                    <Input
-                      value={newCombo.name}
-                      onChange={(e) =>
-                        setNewCombo({ ...newCombo, name: e.target.value })
-                      }
-                      placeholder="Ej: Combo Premium"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Servicios Incluidos</Label>
-                    <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg">
-                      {services.filter(s => s.active).map((service) => (
-                        <label
-                          key={service.id}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={newCombo.services.includes(service.id)}
-                            onChange={() => handleToggleComboService(service.id)}
-                            className="rounded"
-                          />
-                          <span className="text-sm">
-                            {service.name} (${service.price})
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Precio Regular</Label>
-                      <div className="p-3 bg-muted rounded-lg text-center">
-                        <span className="text-lg font-bold">
-                          ${calculateComboRegularPrice()}
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{service.name}</p>
+                          {service.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {service.description}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{service.category}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="flex items-center justify-end gap-1 text-sm">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                          {formatDuration(service.duration_minutes)}
                         </span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Precio Combo</Label>
-                      <Input
-                        type="number"
-                        value={newCombo.comboPrice}
-                        onChange={(e) =>
-                          setNewCombo({
-                            ...newCombo,
-                            comboPrice: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  {newCombo.comboPrice > 0 && calculateComboRegularPrice() > 0 && (
-                    <div className="p-3 bg-success/10 rounded-lg text-center">
-                      <span className="text-success font-medium">
-                        Ahorro: ${calculateComboRegularPrice() - newCombo.comboPrice} (
-                        {(
-                          ((calculateComboRegularPrice() - newCombo.comboPrice) /
-                            calculateComboRegularPrice()) *
-                          100
-                        ).toFixed(0)}
-                        %)
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsNewComboOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleCreateCombo}>Guardar Combo</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            {combos.map((combo) => {
-              const { savings, percent } = calculateSavings(combo);
-              return (
-                <div
-                  key={combo.id}
-                  className="p-4 border rounded-xl flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-medium">{combo.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {combo.services
-                        .map((id) => services.find((s) => s.id === id)?.name)
-                        .join(" + ")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-lg font-bold text-primary">
-                        ${combo.comboPrice}
-                      </span>
-                      <span className="text-sm line-through text-muted-foreground">
-                        ${combo.regularPrice}
-                      </span>
-                      <Badge className="bg-success text-success-foreground">
-                        -{percent}%
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={combo.active}
-                      onCheckedChange={() => {
-                        setCombos((prev) =>
-                          prev.map((c) =>
-                            c.id === combo.id ? { ...c, active: !c.active } : c
-                          )
-                        );
-                      }}
-                    />
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        S/ {service.price}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={service.is_popular ? "text-yellow-500" : "text-muted-foreground"}
+                          onClick={() =>
+                            togglePopularMutation.mutate({
+                              id: service.id,
+                              is_popular: !service.is_popular,
+                            })
+                          }
+                        >
+                          <Star className={`h-4 w-4 ${service.is_popular ? "fill-current" : ""}`} />
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          checked={service.is_active ?? true}
+                          onCheckedChange={(checked) =>
+                            toggleMutation.mutate({ id: service.id, is_active: checked })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(service)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => confirmDelete(service.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Price Settings */}
-      <Card className="card-elevated">
-        <CardHeader>
-          <CardTitle className="font-display text-xl flex items-center gap-2">
-            <Percent className="h-5 w-5 text-primary" />
-            Configuración de Precios
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div>
-              <p className="font-medium">Precios Diferenciados por Barbero</p>
-              <p className="text-sm text-muted-foreground">
-                Permite que cada barbero tenga tarifas distintas
-              </p>
-            </div>
-            <Switch
-              checked={priceSettings.priceByBarber}
-              onCheckedChange={(checked) =>
-                setPriceSettings({ ...priceSettings, priceByBarber: checked })
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex-1">
-              <p className="font-medium">Descuento a Estudiantes</p>
-              <p className="text-sm text-muted-foreground">
-                Aplica descuento automático a estudiantes
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              {priceSettings.studentDiscount && (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    className="w-20"
-                    value={priceSettings.studentDiscountPercent}
-                    onChange={(e) =>
-                      setPriceSettings({
-                        ...priceSettings,
-                        studentDiscountPercent: parseInt(e.target.value) || 0,
-                      })
-                    }
-                  />
-                  <span className="text-sm">%</span>
-                </div>
-              )}
-              <Switch
-                checked={priceSettings.studentDiscount}
-                onCheckedChange={(checked) =>
-                  setPriceSettings({ ...priceSettings, studentDiscount: checked })
-                }
+      {/* Create / Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Editar Servicio" : "Nuevo Servicio"}</DialogTitle>
+            <DialogDescription>
+              {editingId ? "Modifica los datos del servicio" : "Completa la información del nuevo servicio"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nombre *</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ej: Corte Premium"
               />
             </div>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex-1">
-              <p className="font-medium">Descuento a Niños</p>
-              <p className="text-sm text-muted-foreground">
-                Aplica descuento automático a menores de edad
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              {priceSettings.childDiscount && (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    className="w-20"
-                    value={priceSettings.childDiscountPercent}
-                    onChange={(e) =>
-                      setPriceSettings({
-                        ...priceSettings,
-                        childDiscountPercent: parseInt(e.target.value) || 0,
-                      })
-                    }
-                  />
-                  <span className="text-sm">%</span>
-                </div>
-              )}
-              <Switch
-                checked={priceSettings.childDiscount}
-                onCheckedChange={(checked) =>
-                  setPriceSettings({ ...priceSettings, childDiscount: checked })
-                }
+            <div className="space-y-2">
+              <Label>Descripción</Label>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Descripción breve del servicio"
+                rows={2}
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Duración (minutos) *</Label>
+                <Input
+                  type="number"
+                  value={form.duration_minutes}
+                  onChange={(e) => setForm({ ...form, duration_minutes: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Precio (S/) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Categoría *</Label>
+              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={form.is_popular}
+                  onCheckedChange={(v) => setForm({ ...form, is_popular: v })}
+                />
+                <span className="text-sm">Marcar como Popular</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={form.is_active}
+                  onCheckedChange={(v) => setForm({ ...form, is_active: v })}
+                />
+                <span className="text-sm">Activo</span>
+              </label>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog} disabled={isSaving}>
+              <X className="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+              {editingId ? "Guardar Cambios" : "Crear Servicio"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este servicio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El servicio se eliminará permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
