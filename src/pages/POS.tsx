@@ -15,6 +15,9 @@ import {
   ScanBarcode,
   Clock,
   Loader2,
+  CalendarCheck,
+  Phone,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +76,8 @@ export default function POS() {
   const [isStudent, setIsStudent] = useState(false);
   const [ticketNumber] = useState(() => `T-${String(Math.floor(Math.random() * 9000) + 1000)}`);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activeReservationId, setActiveReservationId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("services");
 
   // Modals
   const [quantityProduct, setQuantityProduct] = useState<any | null>(null);
@@ -133,12 +138,33 @@ export default function POS() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, full_name, phone")
+        .select("id, full_name, phone, level, points")
         .order("full_name")
-        .limit(100);
+        .limit(200);
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch today's pending/confirmed reservations
+  const today = new Date().toISOString().split("T")[0];
+  const { data: todayReservations = [] } = useQuery({
+    queryKey: ["pos-today-reservations", today],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reservations")
+        .select(`
+          id, client_name, client_phone, reservation_time, status, client_id,
+          service:services(id, name, price, duration_minutes),
+          barber:barbers(id, full_name)
+        `)
+        .eq("reservation_date", today)
+        .in("status", ["pending", "confirmed"])
+        .order("reservation_time", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 30000,
   });
 
   // Service categories
@@ -232,6 +258,45 @@ export default function POS() {
     setCustomTip("");
     setIsStudent(false);
     setSelectedClient("walk-in");
+    setActiveReservationId(null);
+  };
+
+  // Load reservation into cart
+  const loadReservation = (reservation: typeof todayReservations[0]) => {
+    clearCart();
+    
+    // Set the client
+    if (reservation.client_id) {
+      setSelectedClient(reservation.client_id);
+    } else {
+      // Try to find client by phone
+      const matchedClient = clients.find(c => c.phone === reservation.client_phone);
+      if (matchedClient) {
+        setSelectedClient(matchedClient.id);
+      }
+    }
+
+    // Add the service to cart with barber pre-assigned
+    const svc = reservation.service as any;
+    const barber = reservation.barber as any;
+    if (svc) {
+      setCart([{
+        id: svc.id,
+        name: svc.name,
+        price: Number(svc.price),
+        quantity: 1,
+        type: "service",
+        barberId: barber?.id || undefined,
+      }]);
+    }
+
+    setActiveReservationId(reservation.id);
+    setActiveTab("services");
+    
+    toast({
+      title: "📋 Reserva cargada",
+      description: `${reservation.client_name} — ${svc?.name || "Servicio"}`,
+    });
   };
 
   // Calculations
@@ -293,9 +358,8 @@ export default function POS() {
     try {
       const servicesInCartItems = cart.filter((i) => i.type === "service");
       const productsInCartItems = cart.filter((i) => i.type === "product");
-
-      // Determine the payment method string
       const paymentMethod = method === "mixed" ? "mixed" : method;
+      const clientId = selectedClient !== "walk-in" ? selectedClient : null;
 
       // Record each service as a haircut
       for (const item of servicesInCartItems) {
@@ -305,6 +369,8 @@ export default function POS() {
             service_name: item.name,
             price: item.price,
             payment_method: paymentMethod,
+            client_id: clientId,
+            reservation_id: activeReservationId,
           });
           if (error) throw error;
         }
@@ -312,7 +378,6 @@ export default function POS() {
 
       // Record product sales
       if (productsInCartItems.length > 0) {
-        // Use the first service's barber or null
         const barberId = servicesInCartItems[0]?.barberId || null;
         const productTotal = productsInCartItems.reduce((a, i) => a + i.price * i.quantity, 0);
 
@@ -328,7 +393,6 @@ export default function POS() {
 
         if (saleError) throw saleError;
 
-        // Insert sale items
         const saleItems = productsInCartItems.map((item) => ({
           sale_id: sale.id,
           product_id: item.id,
@@ -340,16 +404,39 @@ export default function POS() {
         if (itemsError) throw itemsError;
       }
 
+      // Update client stats if a client is selected
+      if (clientId) {
+        await supabase.rpc("update_client_after_sale", {
+          p_client_id: clientId,
+          p_amount: total,
+        });
+      }
+
+      // Mark reservation as completed if loaded from reservation
+      if (activeReservationId) {
+        await supabase
+          .from("reservations")
+          .update({ status: "completed" })
+          .eq("id", activeReservationId);
+      }
+
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["daily-haircuts"] });
       queryClient.invalidateQueries({ queryKey: ["daily-sales"] });
       queryClient.invalidateQueries({ queryKey: ["pos-products"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-today-reservations"] });
+      queryClient.invalidateQueries({ queryKey: ["reservations"] });
+
+      const clientName = clientId
+        ? clients.find(c => c.id === clientId)?.full_name || "Cliente"
+        : "Cliente General";
 
       clearCart();
       setShowPaymentModal(false);
       toast({
         title: "¡Venta completada!",
-        description: `Ticket ${ticketNumber} — Total: S/ ${total.toFixed(2)}`,
+        description: `Ticket ${ticketNumber} — ${clientName} — S/ ${total.toFixed(2)}`,
       });
     } catch (error: any) {
       toast({ title: "Error al procesar venta", description: error.message, variant: "destructive" });
@@ -377,6 +464,10 @@ export default function POS() {
   const servicesInCart = cart.filter((item) => item.type === "service");
   const productsInCart = cart.filter((item) => item.type === "product");
 
+  const selectedClientData = selectedClient !== "walk-in" 
+    ? clients.find(c => c.id === selectedClient) 
+    : null;
+
   return (
     <div className="h-[calc(100vh-7rem)] flex gap-4 lg:gap-6">
       {/* Left Panel - Catalog */}
@@ -403,8 +494,8 @@ export default function POS() {
           </div>
         </div>
 
-        <Tabs defaultValue="services" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2 h-14 mb-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-3 h-14 mb-4">
             <TabsTrigger value="services" className="h-12 text-base gap-2">
               <Scissors className="h-5 w-5" />
               SERVICIOS
@@ -413,10 +504,18 @@ export default function POS() {
               <Package2 className="h-5 w-5" />
               PRODUCTOS
             </TabsTrigger>
+            <TabsTrigger value="reservations" className="h-12 text-base gap-2 relative">
+              <CalendarCheck className="h-5 w-5" />
+              CITAS
+              {todayReservations.length > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-success">
+                  {todayReservations.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0">
-            {/* Service category pills */}
             <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
               {serviceCategories.map((cat) => (
                 <Button
@@ -489,6 +588,85 @@ export default function POS() {
               </div>
             </ScrollArea>
           </TabsContent>
+
+          {/* NEW: Reservations Tab */}
+          <TabsContent value="reservations" className="flex-1 flex flex-col min-h-0 mt-0">
+            <div className="mb-4">
+              <h3 className="font-display text-lg mb-1">Citas de Hoy</h3>
+              <p className="text-sm text-muted-foreground">
+                Selecciona una reserva para cargarla al carrito automáticamente
+              </p>
+            </div>
+            <ScrollArea className="flex-1">
+              {todayReservations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <CalendarCheck className="h-16 w-16 mb-4 opacity-30" />
+                  <p className="font-medium">No hay citas pendientes hoy</p>
+                  <p className="text-sm mt-1">Las reservas de la web aparecerán aquí</p>
+                </div>
+              ) : (
+                <div className="grid gap-3 pb-4">
+                  {todayReservations.map((reservation) => {
+                    const svc = reservation.service as any;
+                    const barber = reservation.barber as any;
+                    const isActive = activeReservationId === reservation.id;
+                    return (
+                      <button
+                        key={reservation.id}
+                        onClick={() => loadReservation(reservation)}
+                        className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
+                          isActive 
+                            ? "border-primary bg-primary/10 shadow-md" 
+                            : "border-border bg-card hover:border-primary/50 hover:shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Clock className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{reservation.client_name}</p>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {reservation.client_phone}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-display text-lg font-bold text-primary">
+                              {reservation.reservation_time}
+                            </p>
+                            <Badge variant={reservation.status === "confirmed" ? "default" : "secondary"} className="text-[10px]">
+                              {reservation.status === "confirmed" ? "Confirmada" : "Pendiente"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Scissors className="h-4 w-4 text-muted-foreground" />
+                            <span>{svc?.name || "Servicio"}</span>
+                            <span className="font-semibold text-primary">S/ {svc?.price || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-4 w-4" />
+                            <span>{barber?.full_name || "Sin asignar"}</span>
+                          </div>
+                        </div>
+                        {isActive && (
+                          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-primary font-medium">
+                            <ArrowRight className="h-4 w-4" />
+                            Cargada en carrito
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -513,21 +691,43 @@ export default function POS() {
         </div>
 
         {/* Client selection */}
-        <div className="flex items-center gap-2 mb-4">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <Select value={selectedClient} onValueChange={setSelectedClient}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Seleccionar cliente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="walk-in">Cliente General</SelectItem>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.full_name} — {client.phone}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Seleccionar cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="walk-in">Cliente General</SelectItem>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.full_name} — {client.phone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Client info badge */}
+          {selectedClientData && (
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="text-[10px] gap-1">
+                <User className="h-3 w-3" />
+                {selectedClientData.level === "premium" ? "⭐ Premium" : 
+                 selectedClientData.level === "vip" ? "🌟 VIP" : 
+                 selectedClientData.level === "regular" ? "Regular" : "Nuevo"}
+              </Badge>
+              <Badge variant="secondary" className="text-[10px]">
+                {(selectedClientData as any).points || 0} pts
+              </Badge>
+              {activeReservationId && (
+                <Badge variant="default" className="text-[10px] gap-1 bg-success">
+                  <CalendarCheck className="h-3 w-3" />
+                  Desde reserva
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         <Separator className="my-2" />
@@ -538,7 +738,7 @@ export default function POS() {
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
               <Receipt className="h-16 w-16 mb-4 opacity-30" />
               <p className="font-medium">Carrito vacío</p>
-              <p className="text-sm text-center mt-1">Selecciona servicios o productos para comenzar</p>
+              <p className="text-sm text-center mt-1">Selecciona servicios, productos o una cita</p>
             </div>
           ) : (
             <div className="space-y-3">
