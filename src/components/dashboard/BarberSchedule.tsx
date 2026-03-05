@@ -1,57 +1,33 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Clock } from "lucide-react";
-
-const barbers = [
-  {
-    id: 1,
-    name: "Miguel Ángel",
-    avatar: "MA",
-    shift: "9:00 - 18:00",
-    status: "available",
-    nextAvailable: null,
-  },
-  {
-    id: 2,
-    name: "Juan Carlos",
-    avatar: "JC",
-    shift: "10:00 - 19:00",
-    status: "busy",
-    nextAvailable: 15,
-  },
-  {
-    id: 3,
-    name: "Pedro Sánchez",
-    avatar: "PS",
-    shift: "9:00 - 18:00",
-    status: "busy",
-    nextAvailable: 25,
-  },
-  {
-    id: 4,
-    name: "Roberto Díaz",
-    avatar: "RD",
-    shift: "11:00 - 20:00",
-    status: "break",
-    nextAvailable: 10,
-  },
-  {
-    id: 5,
-    name: "Luis Gómez",
-    avatar: "LG",
-    shift: "9:00 - 18:00",
-    status: "available",
-    nextAvailable: null,
-  },
-];
-
-const statusConfig = {
-  available: { label: "Disponible", variant: "success" as const, color: "bg-success" },
-  busy: { label: "Ocupado", variant: "warning" as const, color: "bg-warning" },
-  break: { label: "En Break", variant: "muted" as const, color: "bg-muted-foreground" },
-};
+import { useActiveBarbers } from "@/hooks/useDashboardData";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function BarberSchedule() {
+  const { data: barbers, isLoading: loadingBarbers } = useActiveBarbers();
+
+  const today = new Date().getDay(); // 0=Sun
+
+  const { data: schedules } = useQuery({
+    queryKey: ["dashboard-barber-schedules", today],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("barber_schedules")
+        .select("barber_id, start_time, end_time")
+        .eq("day_of_week", today);
+      return data || [];
+    },
+  });
+
+  const activeBarbers = (barbers || []).filter(b => b.active);
+
+  const scheduleMap = Object.fromEntries(
+    (schedules || []).map(s => [s.barber_id, s])
+  );
+
   return (
     <div className="card-elevated p-6 animate-fade-in">
       <div className="mb-6 flex items-center justify-between">
@@ -61,64 +37,61 @@ export function BarberSchedule() {
         </div>
         <Clock className="h-5 w-5 text-muted-foreground" />
       </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Barbero</th>
-              <th className="text-center py-3 px-2 text-sm font-medium text-muted-foreground">Turno</th>
-              <th className="text-center py-3 px-2 text-sm font-medium text-muted-foreground">Estado</th>
-              <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Próximo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {barbers.map((barber) => {
-              const status = statusConfig[barber.status as keyof typeof statusConfig];
-              return (
-                <tr
-                  key={barber.id}
-                  className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors"
-                >
-                  <td className="py-3 px-2">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <Avatar className="h-9 w-9 border-2 border-primary/20">
-                          <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                            {barber.avatar}
-                          </AvatarFallback>
-                        </Avatar>
-                        {/* Status dot */}
-                        <span
-                          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${status.color}`}
-                        />
+
+      {loadingBarbers ? (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+        </div>
+      ) : !activeBarbers.length ? (
+        <div className="py-8 text-center text-muted-foreground">No hay barberos activos</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Barbero</th>
+                <th className="text-center py-3 px-2 text-sm font-medium text-muted-foreground">Turno</th>
+                <th className="text-center py-3 px-2 text-sm font-medium text-muted-foreground">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeBarbers.map((barber) => {
+                const schedule = scheduleMap[barber.id];
+                const hasSchedule = !!schedule;
+                const initials = barber.full_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+
+                return (
+                  <tr key={barber.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <Avatar className="h-9 w-9 border-2 border-primary/20">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${hasSchedule ? "bg-success" : "bg-muted-foreground"}`} />
+                        </div>
+                        <span className="font-medium">{barber.full_name}</span>
                       </div>
-                      <span className="font-medium">{barber.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-2 text-center">
-                    <span className="text-sm text-muted-foreground">{barber.shift}</span>
-                  </td>
-                  <td className="py-3 px-2 text-center">
-                    <Badge variant={status.variant} className="text-xs">
-                      {status.label}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-2 text-right">
-                    {barber.nextAvailable ? (
+                    </td>
+                    <td className="py-3 px-2 text-center">
                       <span className="text-sm text-muted-foreground">
-                        En {barber.nextAvailable} min
+                        {hasSchedule ? `${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)}` : "Sin turno"}
                       </span>
-                    ) : (
-                      <span className="text-sm text-success font-medium">Ahora</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    </td>
+                    <td className="py-3 px-2 text-center">
+                      <Badge variant={hasSchedule ? "success" : "muted"} className="text-xs">
+                        {hasSchedule ? "Programado" : "Libre"}
+                      </Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
