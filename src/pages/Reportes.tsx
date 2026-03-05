@@ -30,7 +30,6 @@ export default function Reportes() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl md:text-4xl tracking-tight">
@@ -55,7 +54,6 @@ export default function Reportes() {
               <SelectItem value="lastmonth">Mes pasado</SelectItem>
               <SelectItem value="quarter">Últimos 3 meses</SelectItem>
               <SelectItem value="year">Año actual</SelectItem>
-              <SelectItem value="custom">Personalizado</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" className="gap-2">
@@ -65,7 +63,6 @@ export default function Reportes() {
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="resumen" className="space-y-6">
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
           <TabsTrigger value="resumen" className="gap-2 data-[state=active]:bg-background">
@@ -101,27 +98,22 @@ export default function Reportes() {
         </TabsList>
 
         <TabsContent value="resumen">
-          <ExecutiveSummaryTab />
+          <ExecutiveSummaryTab period={period} />
         </TabsContent>
-
         <TabsContent value="financiero">
-          <FinancialReportTab />
+          <FinancialReportTab period={period} />
         </TabsContent>
-
         <TabsContent value="servicios">
-          <ServicesAnalysisTab />
+          <ServicesAnalysisTab period={period} />
         </TabsContent>
-
         <TabsContent value="inventario">
           <InventoryAnalysisTab />
         </TabsContent>
-
         <TabsContent value="clientes">
-          <ClientsAnalysisTab />
+          <ClientsAnalysisTab period={period} />
         </TabsContent>
-
         <TabsContent value="comparativo">
-          <ComparativeAnalysisTab />
+          <ComparativeAnalysisTab period={period} />
         </TabsContent>
       </Tabs>
     </div>
