@@ -382,26 +382,32 @@ export type Database = {
       haircuts: {
         Row: {
           barber_id: string | null
+          client_id: string | null
           created_at: string
           id: string
           payment_method: string
           price: number
+          reservation_id: string | null
           service_name: string
         }
         Insert: {
           barber_id?: string | null
+          client_id?: string | null
           created_at?: string
           id?: string
           payment_method?: string
           price: number
+          reservation_id?: string | null
           service_name: string
         }
         Update: {
           barber_id?: string | null
+          client_id?: string | null
           created_at?: string
           id?: string
           payment_method?: string
           price?: number
+          reservation_id?: string | null
           service_name?: string
         }
         Relationships: [
@@ -418,6 +424,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "income_by_barber"
             referencedColumns: ["barber_id"]
+          },
+          {
+            foreignKeyName: "haircuts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "haircuts_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -533,6 +553,7 @@ export type Database = {
         Row: {
           barber_id: string | null
           client_email: string | null
+          client_id: string | null
           client_name: string
           client_phone: string
           created_at: string
@@ -549,6 +570,7 @@ export type Database = {
         Insert: {
           barber_id?: string | null
           client_email?: string | null
+          client_id?: string | null
           client_name: string
           client_phone: string
           created_at?: string
@@ -565,6 +587,7 @@ export type Database = {
         Update: {
           barber_id?: string | null
           client_email?: string | null
+          client_id?: string | null
           client_name?: string
           client_phone?: string
           created_at?: string
@@ -592,6 +615,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "income_by_barber"
             referencedColumns: ["barber_id"]
+          },
+          {
+            foreignKeyName: "reservations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "reservations_location_id_fkey"
@@ -856,6 +886,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      update_client_after_sale: {
+        Args: { p_amount: number; p_client_id: string; p_points?: number }
+        Returns: undefined
       }
     }
     Enums: {

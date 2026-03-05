@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format, parseISO, isToday, isTomorrow, isPast } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -15,6 +16,7 @@ import {
   Star,
   Filter,
   Search,
+  ShoppingCart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Reservation } from "@/types/reservation";
 
 export default function Reservas() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: reservations = [], isLoading } = useReservations();
   const updateStatus = useUpdateReservationStatus();
@@ -512,19 +515,32 @@ export default function Reservas() {
                   </>
                 )}
                 {selectedReservation.status === "confirmed" && (
-                  <Button
-                    className="w-full sm:w-auto bg-success hover:bg-success/90"
-                    onClick={() =>
-                      handleStatusChange(
-                        selectedReservation.id,
-                        "completed",
-                        satisfactionRating
-                      )
-                    }
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Marcar Completada
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto gap-2"
+                      onClick={() => {
+                        setSelectedReservation(null);
+                        navigate("/admin/pos?reservation=" + selectedReservation.id);
+                      }}
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      Cobrar en POS
+                    </Button>
+                    <Button
+                      className="w-full sm:w-auto bg-success hover:bg-success/90"
+                      onClick={() =>
+                        handleStatusChange(
+                          selectedReservation.id,
+                          "completed",
+                          satisfactionRating
+                        )
+                      }
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Marcar Completada
+                    </Button>
+                  </>
                 )}
                 {selectedReservation.status === "cancelled" && (
                   <Button
