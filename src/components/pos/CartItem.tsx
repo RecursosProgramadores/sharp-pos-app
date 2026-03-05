@@ -5,14 +5,14 @@ import { Badge } from "@/components/ui/badge";
 
 interface CartItemProps {
   item: {
-    id: number;
+    id: string;
     name: string;
     price: number;
     quantity: number;
     type: "service" | "product";
     barberId?: string;
   };
-  barbers: { id: string; name: string }[];
+  barbers: { id: string; full_name: string }[];
   onUpdateQuantity: (delta: number) => void;
   onRemove: () => void;
   onBarberChange: (barberId: string) => void;
@@ -32,7 +32,7 @@ export function CartItem({ item, barbers, onUpdateQuantity, onRemove, onBarberCh
             <Package className="h-4 w-4 text-secondary" />
           )}
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="font-medium text-sm truncate">{item.name}</p>
@@ -41,10 +41,10 @@ export function CartItem({ item, barbers, onUpdateQuantity, onRemove, onBarberCh
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            ${item.price.toFixed(2)} c/u
+            S/ {item.price.toFixed(2)} c/u
           </p>
         </div>
-        
+
         <Button
           variant="ghost"
           size="icon"
@@ -57,26 +57,16 @@ export function CartItem({ item, barbers, onUpdateQuantity, onRemove, onBarberCh
 
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onUpdateQuantity(-1)}
-          >
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onUpdateQuantity(-1)}>
             <Minus className="h-3 w-3" />
           </Button>
           <span className="w-8 text-center font-medium">{item.quantity}</span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onUpdateQuantity(1)}
-          >
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onUpdateQuantity(1)}>
             <Plus className="h-3 w-3" />
           </Button>
         </div>
-        
-        <span className="font-display text-lg">${subtotal.toFixed(2)}</span>
+
+        <span className="font-display text-lg">S/ {subtotal.toFixed(2)}</span>
       </div>
 
       {item.type === "service" && (
@@ -87,7 +77,7 @@ export function CartItem({ item, barbers, onUpdateQuantity, onRemove, onBarberCh
           <SelectContent>
             {barbers.map((barber) => (
               <SelectItem key={barber.id} value={barber.id}>
-                {barber.name}
+                {barber.full_name}
               </SelectItem>
             ))}
           </SelectContent>
