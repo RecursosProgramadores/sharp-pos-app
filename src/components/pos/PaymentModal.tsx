@@ -14,7 +14,7 @@ interface PaymentModalProps {
   open: boolean;
   onClose: () => void;
   total: number;
-  onConfirm: (method: PaymentMethod, details: Record<string, unknown>) => void;
+  onConfirm: (method: PaymentMethod, details: Record<string, unknown>) => void | Promise<void>;
 }
 
 const paymentMethods = [
@@ -107,7 +107,7 @@ export function PaymentModal({ open, onClose, total, onConfirm }: PaymentModalPr
             </p>
             {method === "cash" && change > 0 && (
               <p className="text-xl font-display mt-4">
-                Cambio: <span className="text-green-600">${change.toFixed(2)}</span>
+                Cambio: <span className="text-green-600">S/ {change.toFixed(2)}</span>
               </p>
             )}
           </div>
@@ -123,7 +123,7 @@ export function PaymentModal({ open, onClose, total, onConfirm }: PaymentModalPr
           <DialogTitle className="text-center text-xl">Procesar Pago</DialogTitle>
           <div className="text-center py-4">
             <p className="text-muted-foreground text-sm">Total a pagar</p>
-            <p className="font-display text-5xl text-primary">${total.toFixed(2)}</p>
+            <p className="font-display text-5xl text-primary">S/ {total.toFixed(2)}</p>
           </div>
         </DialogHeader>
 
@@ -171,7 +171,7 @@ export function PaymentModal({ open, onClose, total, onConfirm }: PaymentModalPr
                   onClick={() => setCashReceived(amount.toString())}
                   className="flex-1"
                 >
-                  ${amount}
+                  S/ {amount}
                 </Button>
               ))}
               <Button
@@ -186,7 +186,7 @@ export function PaymentModal({ open, onClose, total, onConfirm }: PaymentModalPr
             {parseFloat(cashReceived) >= total && (
               <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg text-center">
                 <p className="text-sm text-muted-foreground">Cambio a entregar</p>
-                <p className="text-4xl font-display text-green-600">${change.toFixed(2)}</p>
+                <p className="text-4xl font-display text-green-600">S/ {change.toFixed(2)}</p>
               </div>
             )}
           </div>
@@ -243,7 +243,7 @@ export function PaymentModal({ open, onClose, total, onConfirm }: PaymentModalPr
             
             <div className="bg-muted p-4 rounded-lg text-center">
               <p className="text-sm text-muted-foreground mb-2">Esperando confirmación de transferencia</p>
-              <p className="font-display text-3xl">${total.toFixed(2)}</p>
+              <p className="font-display text-3xl">S/ {total.toFixed(2)}</p>
             </div>
           </div>
         )}
@@ -302,11 +302,11 @@ export function PaymentModal({ open, onClose, total, onConfirm }: PaymentModalPr
               isMixedValid ? "bg-green-50 dark:bg-green-950" : "bg-destructive/10"
             )}>
               <p className="text-sm">
-                Suma: ${mixedTotal.toFixed(2)} / ${total.toFixed(2)}
+                Suma: S/ {mixedTotal.toFixed(2)} / S/ {total.toFixed(2)}
               </p>
               {!isMixedValid && mixedTotal > 0 && (
                 <p className="text-destructive text-sm">
-                  {mixedTotal > total ? "Excede el total" : `Faltan $${(total - mixedTotal).toFixed(2)}`}
+                  {mixedTotal > total ? "Excede el total" : `Faltan S/ ${(total - mixedTotal).toFixed(2)}`}
                 </p>
               )}
             </div>

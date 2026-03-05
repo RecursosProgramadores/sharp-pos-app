@@ -14,6 +14,7 @@ import {
   Scissors,
   ScanBarcode,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,48 +39,11 @@ import { PaymentModal } from "@/components/pos/PaymentModal";
 import { DailySalesModal } from "@/components/pos/DailySalesModal";
 import { SavedSalesModal } from "@/components/pos/SavedSalesModal";
 import { CartItem } from "@/components/pos/CartItem";
-
-const services = [
-  { id: 1, name: "Corte Clásico", price: 15, icon: "scissors", color: "bg-blue-600" },
-  { id: 2, name: "Fade", price: 20, icon: "sparkles", color: "bg-purple-600" },
-  { id: 3, name: "Barba", price: 12, icon: "brush", color: "bg-amber-600" },
-  { id: 4, name: "Diseño", price: 18, icon: "paint", color: "bg-pink-600" },
-  { id: 5, name: "Corte + Barba", price: 25, icon: "scissors", color: "bg-green-600" },
-  { id: 6, name: "Tratamiento Capilar", price: 30, icon: "droplets", color: "bg-teal-600" },
-  { id: 7, name: "Coloración", price: 40, icon: "paint", color: "bg-orange-600" },
-  { id: 8, name: "Niño", price: 12, icon: "baby", color: "bg-sky-600" },
-];
-
-const products = [
-  { id: 101, name: "Pomada Mate", price: 18.99, stock: 15, category: "Pomadas" },
-  { id: 102, name: "Gel Fijador", price: 12.99, stock: 8, category: "Geles" },
-  { id: 103, name: "Aceite Barba", price: 24.99, stock: 4, category: "Aceites" },
-  { id: 104, name: "Cera Moldeadora", price: 16.99, stock: 12, category: "Ceras" },
-  { id: 105, name: "Shampoo Anti-Caspa", price: 14.99, stock: 20, category: "Shampoos" },
-  { id: 106, name: "Aftershave", price: 19.99, stock: 2, category: "Aftershave" },
-  { id: 107, name: "Tinte Negro", price: 29.99, stock: 6, category: "Tintes" },
-  { id: 108, name: "Pomada Brillante", price: 17.99, stock: 0, category: "Pomadas" },
-];
-
-const barbers = [
-  { id: "miguel", name: "Miguel Ángel" },
-  { id: "juan", name: "Juan Carlos" },
-  { id: "pedro", name: "Pedro Sánchez" },
-  { id: "carlos", name: "Carlos López" },
-];
-
-const clients = [
-  { id: "walk-in", name: "Cliente General" },
-  { id: "carlos", name: "Carlos Mendoza" },
-  { id: "roberto", name: "Roberto García" },
-  { id: "luis", name: "Luis Pérez" },
-  { id: "mario", name: "Mario González" },
-];
-
-const categories = ["Todos", "Pomadas", "Geles", "Aceites", "Ceras", "Shampoos", "Aftershave", "Tintes"];
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface CartItemType {
-  id: number;
+  id: string;
   name: string;
   price: number;
   quantity: number;
@@ -96,28 +60,96 @@ interface SavedSale {
 }
 
 export default function POS() {
+  const queryClient = useQueryClient();
   const [cart, setCart] = useState<CartItemType[]>([]);
   const [selectedClient, setSelectedClient] = useState("walk-in");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
+  const [serviceCategory, setServiceCategory] = useState("Todos");
   const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
   const [discountValue, setDiscountValue] = useState("");
   const [tipPercent, setTipPercent] = useState<number | null>(null);
   const [customTip, setCustomTip] = useState("");
   const [isStudent, setIsStudent] = useState(false);
   const [ticketNumber] = useState(() => `T-${String(Math.floor(Math.random() * 9000) + 1000)}`);
-  
+  const [isProcessing, setIsProcessing] = useState(false);
+
   // Modals
-  const [quantityProduct, setQuantityProduct] = useState<typeof products[0] | null>(null);
+  const [quantityProduct, setQuantityProduct] = useState<any | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showDailySales, setShowDailySales] = useState(false);
   const [showSavedSales, setShowSavedSales] = useState(false);
-  
-  // Saved sales
-  const [savedSales, setSavedSales] = useState<SavedSale[]>([
-    { id: "S-001", client: "Roberto García", items: [], total: 45.00, savedAt: "Hace 30 min" },
-    { id: "S-002", client: "Cliente General", items: [], total: 28.50, savedAt: "Hace 1 hora" },
-  ]);
+
+  // Saved sales (local state)
+  const [savedSales, setSavedSales] = useState<SavedSale[]>([]);
+
+  // Fetch real services
+  const { data: services = [] } = useQuery({
+    queryKey: ["pos-services"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .eq("is_active", true)
+        .order("category")
+        .order("price");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch real products
+  const { data: products = [] } = useQuery({
+    queryKey: ["pos-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("active", true)
+        .order("category")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch real barbers
+  const { data: barbers = [] } = useQuery({
+    queryKey: ["pos-barbers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("barbers")
+        .select("id, full_name, photo_url")
+        .eq("active", true)
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch real clients
+  const { data: clients = [] } = useQuery({
+    queryKey: ["pos-clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, full_name, phone")
+        .order("full_name")
+        .limit(100);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Service categories
+  const serviceCategories = ["Todos", ...new Set(services.map((s) => s.category))];
+
+  // Product categories
+  const productCategories = ["Todos", ...new Set(products.map((p) => p.category))];
+
+  const filteredServices = serviceCategory === "Todos"
+    ? services
+    : services.filter((s) => s.category === serviceCategory);
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -135,12 +167,12 @@ export default function POS() {
             : i
         );
       }
-      return [...prev, { 
-        id: service.id, 
-        name: service.name, 
-        price: service.price, 
-        quantity: 1, 
-        type: "service" as const 
+      return [...prev, {
+        id: service.id,
+        name: service.name,
+        price: Number(service.price),
+        quantity: 1,
+        type: "service" as const,
       }];
     });
     toast({ title: "Servicio agregado", description: service.name });
@@ -156,18 +188,18 @@ export default function POS() {
             : i
         );
       }
-      return [...prev, { 
-        id: product.id, 
-        name: product.name, 
-        price: product.price, 
-        quantity, 
-        type: "product" as const 
+      return [...prev, {
+        id: product.id,
+        name: product.name,
+        price: Number(product.sale_price),
+        quantity,
+        type: "product" as const,
       }];
     });
     toast({ title: "Producto agregado", description: `${product.name} x${quantity}` });
   };
 
-  const updateQuantity = (id: number, type: "service" | "product", delta: number) => {
+  const updateQuantity = (id: string, type: "service" | "product", delta: number) => {
     setCart((prev) =>
       prev
         .map((item) =>
@@ -179,7 +211,7 @@ export default function POS() {
     );
   };
 
-  const updateBarber = (id: number, barberId: string) => {
+  const updateBarber = (id: string, barberId: string) => {
     setCart((prev) =>
       prev.map((item) =>
         item.id === id && item.type === "service"
@@ -189,7 +221,7 @@ export default function POS() {
     );
   };
 
-  const removeItem = (id: number, type: "service" | "product") => {
+  const removeItem = (id: string, type: "service" | "product") => {
     setCart((prev) => prev.filter((item) => !(item.id === id && item.type === type)));
   };
 
@@ -204,28 +236,20 @@ export default function POS() {
 
   // Calculations
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  
   const studentDiscount = isStudent ? subtotal * 0.1 : 0;
-  
   const manualDiscount = discountValue
     ? discountType === "percent"
       ? (subtotal - studentDiscount) * (parseFloat(discountValue) / 100)
       : parseFloat(discountValue)
     : 0;
-  
   const totalDiscount = studentDiscount + manualDiscount;
-  
   const afterDiscount = subtotal - totalDiscount;
-  
-  const tax = afterDiscount * 0.16;
-  
   const tipAmount = tipPercent
     ? afterDiscount * (tipPercent / 100)
     : customTip
       ? parseFloat(customTip)
       : 0;
-  
-  const total = afterDiscount + tax + tipAmount;
+  const total = afterDiscount + tipAmount;
 
   const hasServicesWithoutBarber = cart.some(
     (item) => item.type === "service" && !item.barberId
@@ -236,16 +260,16 @@ export default function POS() {
       toast({ title: "Carrito vacío", variant: "destructive" });
       return;
     }
-    
-    const clientName = clients.find((c) => c.id === selectedClient)?.name || "Cliente General";
+    const clientName = selectedClient === "walk-in"
+      ? "Cliente General"
+      : clients.find((c) => c.id === selectedClient)?.full_name || "Cliente General";
     const newSaved: SavedSale = {
       id: `S-${String(Math.floor(Math.random() * 9000) + 1000)}`,
       client: clientName,
       items: [...cart],
       total: subtotal,
-      savedAt: "Ahora",
+      savedAt: new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }),
     };
-    
     setSavedSales((prev) => [...prev, newSaved]);
     clearCart();
     toast({ title: "Venta guardada", description: "Puedes continuar después" });
@@ -264,31 +288,85 @@ export default function POS() {
     toast({ title: "Venta eliminada" });
   };
 
-  const handlePaymentConfirm = () => {
-    clearCart();
-    setShowPaymentModal(false);
-    toast({
-      title: "¡Venta completada!",
-      description: `Ticket ${ticketNumber} - Total: $${total.toFixed(2)}`,
-    });
+  const handlePaymentConfirm = async (method: string, details: Record<string, unknown>) => {
+    setIsProcessing(true);
+    try {
+      const servicesInCartItems = cart.filter((i) => i.type === "service");
+      const productsInCartItems = cart.filter((i) => i.type === "product");
+
+      // Determine the payment method string
+      const paymentMethod = method === "mixed" ? "mixed" : method;
+
+      // Record each service as a haircut
+      for (const item of servicesInCartItems) {
+        for (let i = 0; i < item.quantity; i++) {
+          const { error } = await supabase.from("haircuts").insert({
+            barber_id: item.barberId || null,
+            service_name: item.name,
+            price: item.price,
+            payment_method: paymentMethod,
+          });
+          if (error) throw error;
+        }
+      }
+
+      // Record product sales
+      if (productsInCartItems.length > 0) {
+        // Use the first service's barber or null
+        const barberId = servicesInCartItems[0]?.barberId || null;
+        const productTotal = productsInCartItems.reduce((a, i) => a + i.price * i.quantity, 0);
+
+        const { data: sale, error: saleError } = await supabase
+          .from("sales")
+          .insert({
+            barber_id: barberId,
+            total: productTotal,
+            payment_method: paymentMethod,
+          })
+          .select("id")
+          .single();
+
+        if (saleError) throw saleError;
+
+        // Insert sale items
+        const saleItems = productsInCartItems.map((item) => ({
+          sale_id: sale.id,
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        }));
+
+        const { error: itemsError } = await supabase.from("sale_items").insert(saleItems);
+        if (itemsError) throw itemsError;
+      }
+
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["daily-haircuts"] });
+      queryClient.invalidateQueries({ queryKey: ["daily-sales"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-products"] });
+
+      clearCart();
+      setShowPaymentModal(false);
+      toast({
+        title: "¡Venta completada!",
+        description: `Ticket ${ticketNumber} — Total: S/ ${total.toFixed(2)}`,
+      });
+    } catch (error: any) {
+      toast({ title: "Error al procesar venta", description: error.message, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Keyboard shortcuts
   const handleKeyboard = useCallback((e: KeyboardEvent) => {
-    if (e.key === "F1") {
+    if (e.key === "F1") { e.preventDefault(); clearCart(); }
+    else if (e.key === "F2") {
       e.preventDefault();
-      clearCart();
-    } else if (e.key === "F2") {
-      e.preventDefault();
-      if (cart.length > 0 && !hasServicesWithoutBarber) {
-        setShowPaymentModal(true);
-      }
-    } else if (e.key === "F9") {
-      e.preventDefault();
-      document.getElementById("search-input")?.focus();
-    } else if (e.key === "Escape") {
-      clearCart();
+      if (cart.length > 0 && !hasServicesWithoutBarber) setShowPaymentModal(true);
     }
+    else if (e.key === "F9") { e.preventDefault(); document.getElementById("search-input")?.focus(); }
+    else if (e.key === "Escape") clearCart();
   }, [cart.length, hasServicesWithoutBarber]);
 
   useEffect(() => {
@@ -303,34 +381,17 @@ export default function POS() {
     <div className="h-[calc(100vh-7rem)] flex gap-4 lg:gap-6">
       {/* Left Panel - Catalog */}
       <div className="flex-[6] flex flex-col min-w-0">
-        {/* Header with actions */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h1 className="font-display text-2xl md:text-3xl tracking-tight">
-              Punto de Venta
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Ticket: {ticketNumber}
-            </p>
+            <h1 className="font-display text-2xl md:text-3xl tracking-tight">Punto de Venta</h1>
+            <p className="text-muted-foreground text-sm">Ticket: {ticketNumber}</p>
           </div>
-          
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => setShowDailySales(true)}
-            >
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowDailySales(true)}>
               <ListOrdered className="h-4 w-4" />
               <span className="hidden sm:inline">Ventas del Día</span>
             </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 relative"
-              onClick={() => setShowSavedSales(true)}
-            >
+            <Button variant="outline" size="sm" className="gap-2 relative" onClick={() => setShowSavedSales(true)}>
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">Guardadas</span>
               {savedSales.length > 0 && (
@@ -342,7 +403,6 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Tabs for Services/Products */}
         <Tabs defaultValue="services" className="flex-1 flex flex-col min-h-0">
           <TabsList className="grid w-full grid-cols-2 h-14 mb-4">
             <TabsTrigger value="services" className="h-12 text-base gap-2">
@@ -355,20 +415,36 @@ export default function POS() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="services" className="flex-1 overflow-auto mt-0">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {services.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  onClick={() => addService(service)}
-                />
+          <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0">
+            {/* Service category pills */}
+            <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+              {serviceCategories.map((cat) => (
+                <Button
+                  key={cat}
+                  variant={serviceCategory === cat ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setServiceCategory(cat)}
+                  className="whitespace-nowrap"
+                >
+                  {cat}
+                </Button>
               ))}
             </div>
+
+            <ScrollArea className="flex-1">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-4">
+                {filteredServices.map((service) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    onClick={() => addService(service)}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
           </TabsContent>
 
           <TabsContent value="products" className="flex-1 flex flex-col min-h-0 mt-0">
-            {/* Search and filters */}
             <div className="flex flex-wrap gap-3 mb-4">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -380,15 +456,10 @@ export default function POS() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="outline" size="lg" className="gap-2 h-12">
-                <ScanBarcode className="h-5 w-5" />
-                <span className="hidden sm:inline">Escanear</span>
-              </Button>
             </div>
 
-            {/* Category pills */}
             <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
-              {categories.map((cat) => (
+              {productCategories.map((cat) => (
                 <Button
                   key={cat}
                   variant={selectedCategory === cat ? "default" : "outline"}
@@ -401,7 +472,6 @@ export default function POS() {
               ))}
             </div>
 
-            {/* Products grid */}
             <ScrollArea className="flex-1">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-4">
                 {filteredProducts.map((product) => (
@@ -411,6 +481,11 @@ export default function POS() {
                     onClick={() => setQuantityProduct(product)}
                   />
                 ))}
+                {filteredProducts.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    No hay productos disponibles.
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -419,7 +494,6 @@ export default function POS() {
 
       {/* Right Panel - Cart */}
       <div className="flex-[4] flex flex-col card-elevated p-4 lg:p-6 min-w-[320px] max-w-md">
-        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-primary" />
@@ -446,9 +520,10 @@ export default function POS() {
               <SelectValue placeholder="Seleccionar cliente" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="walk-in">Cliente General</SelectItem>
               {clients.map((client) => (
                 <SelectItem key={client.id} value={client.id}>
-                  {client.name}
+                  {client.full_name} — {client.phone}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -463,17 +538,13 @@ export default function POS() {
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
               <Receipt className="h-16 w-16 mb-4 opacity-30" />
               <p className="font-medium">Carrito vacío</p>
-              <p className="text-sm text-center mt-1">
-                Selecciona servicios o productos para comenzar
-              </p>
+              <p className="text-sm text-center mt-1">Selecciona servicios o productos para comenzar</p>
             </div>
           ) : (
             <div className="space-y-3">
               {servicesInCart.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                    Servicios
-                  </p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Servicios</p>
                   <div className="space-y-2">
                     {servicesInCart.map((item) => (
                       <CartItem
@@ -488,12 +559,9 @@ export default function POS() {
                   </div>
                 </div>
               )}
-              
               {productsInCart.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                    Productos
-                  </p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Productos</p>
                   <div className="space-y-2">
                     {productsInCart.map((item) => (
                       <CartItem
@@ -515,36 +583,18 @@ export default function POS() {
         {cart.length > 0 && (
           <>
             <Separator className="my-2" />
-
-            {/* Adjustments section */}
             <div className="space-y-3 py-3">
               {/* Discount */}
               <div className="flex items-center gap-2">
                 <div className="flex border rounded-md overflow-hidden">
-                  <Button
-                    variant={discountType === "percent" ? "default" : "ghost"}
-                    size="sm"
-                    className="rounded-none h-8 px-2"
-                    onClick={() => setDiscountType("percent")}
-                  >
+                  <Button variant={discountType === "percent" ? "default" : "ghost"} size="sm" className="rounded-none h-8 px-2" onClick={() => setDiscountType("percent")}>
                     <Percent className="h-3 w-3" />
                   </Button>
-                  <Button
-                    variant={discountType === "fixed" ? "default" : "ghost"}
-                    size="sm"
-                    className="rounded-none h-8 px-2"
-                    onClick={() => setDiscountType("fixed")}
-                  >
+                  <Button variant={discountType === "fixed" ? "default" : "ghost"} size="sm" className="rounded-none h-8 px-2" onClick={() => setDiscountType("fixed")}>
                     <DollarSign className="h-3 w-3" />
                   </Button>
                 </div>
-                <Input
-                  type="number"
-                  placeholder="Descuento"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(e.target.value)}
-                  className="flex-1 h-8"
-                />
+                <Input type="number" placeholder="Descuento" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="flex-1 h-8" />
               </div>
 
               {/* Tip */}
@@ -552,29 +602,11 @@ export default function POS() {
                 <Label className="text-sm text-muted-foreground whitespace-nowrap">Propina:</Label>
                 <div className="flex gap-1 flex-1">
                   {[5, 10, 15].map((percent) => (
-                    <Button
-                      key={percent}
-                      variant={tipPercent === percent ? "default" : "outline"}
-                      size="sm"
-                      className="flex-1 h-8 px-2"
-                      onClick={() => {
-                        setTipPercent(tipPercent === percent ? null : percent);
-                        setCustomTip("");
-                      }}
-                    >
+                    <Button key={percent} variant={tipPercent === percent ? "default" : "outline"} size="sm" className="flex-1 h-8 px-2" onClick={() => { setTipPercent(tipPercent === percent ? null : percent); setCustomTip(""); }}>
                       {percent}%
                     </Button>
                   ))}
-                  <Input
-                    type="number"
-                    placeholder="$"
-                    value={customTip}
-                    onChange={(e) => {
-                      setCustomTip(e.target.value);
-                      setTipPercent(null);
-                    }}
-                    className="w-16 h-8"
-                  />
+                  <Input type="number" placeholder="S/" value={customTip} onChange={(e) => { setCustomTip(e.target.value); setTipPercent(null); }} className="w-16 h-8" />
                 </div>
               </div>
 
@@ -584,14 +616,9 @@ export default function POS() {
                   <GraduationCap className="h-4 w-4" />
                   Cliente estudiante (-10%)
                 </Label>
-                <Switch
-                  id="student"
-                  checked={isStudent}
-                  onCheckedChange={setIsStudent}
-                />
+                <Switch id="student" checked={isStudent} onCheckedChange={setIsStudent} />
               </div>
             </div>
-
             <Separator className="my-2" />
           </>
         )}
@@ -600,49 +627,33 @@ export default function POS() {
         <div className="space-y-1.5 py-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>S/ {subtotal.toFixed(2)}</span>
           </div>
           {totalDiscount > 0 && (
             <div className="flex justify-between text-sm text-green-600">
               <span>Descuento</span>
-              <span>-${totalDiscount.toFixed(2)}</span>
+              <span>-S/ {totalDiscount.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">IVA (16%)</span>
-            <span>${tax.toFixed(2)}</span>
-          </div>
           {tipAmount > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Propina</span>
-              <span>${tipAmount.toFixed(2)}</span>
+              <span>S/ {tipAmount.toFixed(2)}</span>
             </div>
           )}
           <Separator className="my-2" />
           <div className="flex justify-between items-center">
             <span className="font-semibold text-lg">TOTAL</span>
-            <span className="font-display text-4xl text-primary">
-              ${total.toFixed(2)}
-            </span>
+            <span className="font-display text-4xl text-primary">S/ {total.toFixed(2)}</span>
           </div>
         </div>
 
-        {/* Warning for missing barber */}
         {hasServicesWithoutBarber && (
-          <p className="text-destructive text-sm text-center mb-3">
-            ⚠️ Selecciona un barbero para cada servicio
-          </p>
+          <p className="text-destructive text-sm text-center mb-3">⚠️ Selecciona un barbero para cada servicio</p>
         )}
 
-        {/* Action buttons */}
         <div className="grid grid-cols-2 gap-3 mt-auto pt-4">
-          <Button
-            variant="outline"
-            size="lg"
-            className="h-14 gap-2"
-            onClick={saveCurrentSale}
-            disabled={cart.length === 0}
-          >
+          <Button variant="outline" size="lg" className="h-14 gap-2" onClick={saveCurrentSale} disabled={cart.length === 0}>
             <Save className="h-5 w-5" />
             Guardar
           </Button>
@@ -650,13 +661,12 @@ export default function POS() {
             size="lg"
             className="h-14 gap-2 text-lg font-bold bg-secondary hover:bg-secondary/90"
             onClick={() => setShowPaymentModal(true)}
-            disabled={cart.length === 0 || hasServicesWithoutBarber}
+            disabled={cart.length === 0 || hasServicesWithoutBarber || isProcessing}
           >
-            COBRAR
+            {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "COBRAR"}
           </Button>
         </div>
 
-        {/* Keyboard shortcuts hint */}
         <p className="text-[10px] text-muted-foreground text-center mt-3">
           F1: Nuevo | F2: Cobrar | F9: Buscar | ESC: Limpiar
         </p>
