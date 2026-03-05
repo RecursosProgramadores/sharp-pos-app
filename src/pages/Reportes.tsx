@@ -8,6 +8,8 @@ import {
   Package,
   Users,
   GitCompare,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,16 +19,104 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 import ExecutiveSummaryTab from "@/components/reportes/ExecutiveSummaryTab";
 import FinancialReportTab from "@/components/reportes/FinancialReportTab";
 import ServicesAnalysisTab from "@/components/reportes/ServicesAnalysisTab";
 import InventoryAnalysisTab from "@/components/reportes/InventoryAnalysisTab";
 import ClientsAnalysisTab from "@/components/reportes/ClientsAnalysisTab";
 import ComparativeAnalysisTab from "@/components/reportes/ComparativeAnalysisTab";
+import {
+  useExecutiveSummary,
+  useFinancialReport,
+  useServicesAnalysis,
+  useInventoryAnalysis,
+  useClientsAnalysis,
+  useComparativeAnalysis,
+} from "@/hooks/useReportData";
+import {
+  exportToPDF,
+  exportToExcel,
+  buildExecutiveSections,
+  buildFinancialSections,
+  buildServicesSections,
+  buildInventorySections,
+  buildClientsSections,
+  buildComparativeSections,
+} from "@/lib/reportExport";
+
+const TAB_TITLES: Record<string, string> = {
+  resumen: "Resumen Ejecutivo",
+  financiero: "Reporte Financiero",
+  servicios: "Análisis de Servicios",
+  inventario: "Análisis de Inventario",
+  clientes: "Análisis de Clientes",
+  comparativo: "Análisis Comparativo",
+};
 
 export default function Reportes() {
   const [period, setPeriod] = useState("month");
+  const [activeTab, setActiveTab] = useState("resumen");
+
+  // All hooks for export data
+  const executive = useExecutiveSummary(period);
+  const financial = useFinancialReport(period);
+  const services = useServicesAnalysis(period);
+  const inventory = useInventoryAnalysis();
+  const clients = useClientsAnalysis(period);
+  const comparative = useComparativeAnalysis(period);
+
+  const handleExport = (format: "pdf" | "excel") => {
+    const title = TAB_TITLES[activeTab] || "Reporte";
+    let sections;
+
+    try {
+      switch (activeTab) {
+        case "resumen":
+          if (!executive.data) throw new Error("Cargando datos...");
+          sections = buildExecutiveSections(executive.data);
+          break;
+        case "financiero":
+          if (!financial.data) throw new Error("Cargando datos...");
+          sections = buildFinancialSections(financial.data);
+          break;
+        case "servicios":
+          if (!services.data) throw new Error("Cargando datos...");
+          sections = buildServicesSections(services.data);
+          break;
+        case "inventario":
+          if (!inventory.data) throw new Error("Cargando datos...");
+          sections = buildInventorySections(inventory.data);
+          break;
+        case "clientes":
+          if (!clients.data) throw new Error("Cargando datos...");
+          sections = buildClientsSections(clients.data);
+          break;
+        case "comparativo":
+          if (!comparative.data) throw new Error("Cargando datos...");
+          sections = buildComparativeSections(comparative.data);
+          break;
+        default:
+          throw new Error("Pestaña no soportada");
+      }
+
+      if (format === "pdf") {
+        exportToPDF(title, sections, period);
+      } else {
+        exportToExcel(title, sections, period);
+      }
+      toast.success(`${title} exportado como ${format === "pdf" ? "PDF" : "Excel"}`);
+    } catch (err: any) {
+      toast.error(err.message || "Error al exportar");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -56,14 +146,28 @@ export default function Reportes() {
               <SelectItem value="year">Año actual</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Exportar
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("pdf")} className="gap-2 cursor-pointer">
+                <FileText className="h-4 w-4 text-destructive" />
+                Exportar a PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("excel")} className="gap-2 cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 text-success" />
+                Exportar a Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <Tabs defaultValue="resumen" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
           <TabsTrigger value="resumen" className="gap-2 data-[state=active]:bg-background">
             <BarChart3 className="h-4 w-4" />
