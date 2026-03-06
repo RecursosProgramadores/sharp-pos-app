@@ -17,6 +17,7 @@ import {
   Filter,
   Search,
   ShoppingCart,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ import {
 import { useReservations, useUpdateReservationStatus, useDeleteReservation } from "@/hooks/useReservations";
 import { useToast } from "@/hooks/use-toast";
 import type { Reservation } from "@/types/reservation";
+import { sendAppointmentReminder } from "@/lib/whatsapp";
 
 export default function Reservas() {
   const navigate = useNavigate();
@@ -491,6 +493,34 @@ export default function Reservas() {
               )}
 
               <DialogFooter className="flex-col gap-2 sm:flex-row">
+                {/* WhatsApp Reminder Button - always visible for pending/confirmed */}
+                {(selectedReservation.status === "pending" || selectedReservation.status === "confirmed") && (
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto gap-2 text-green-600 border-green-600 hover:bg-green-50"
+                    onClick={() => {
+                      const svc = selectedReservation.service;
+                      const barber = selectedReservation.barber;
+                      const loc = selectedReservation.location;
+                      sendAppointmentReminder({
+                        clientName: selectedReservation.client_name,
+                        clientPhone: selectedReservation.client_phone,
+                        serviceName: svc?.name || "Servicio",
+                        barberName: barber?.full_name || "Por asignar",
+                        time: selectedReservation.reservation_time,
+                        locationName: loc?.name,
+                      });
+                      toast({
+                        title: "WhatsApp abierto",
+                        description: "Se abrió WhatsApp con el recordatorio pre-escrito",
+                      });
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Recordar por WhatsApp
+                  </Button>
+                )}
+
                 {selectedReservation.status === "pending" && (
                   <>
                     <Button

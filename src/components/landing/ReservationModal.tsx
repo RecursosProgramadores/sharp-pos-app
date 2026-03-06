@@ -121,6 +121,24 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
         reservation_time: data.reservation_time,
       });
       setSuccess(true);
+
+      // Auto-send WhatsApp confirmation
+      const svc = services.find(s => s.id === data.service_id);
+      const barber = barbers.find(b => b.id === data.barber_id);
+      const loc = locations.find(l => l.id === data.location_id);
+      if (svc && barber && loc) {
+        const { sendReservationConfirmation } = await import("@/lib/whatsapp");
+        sendReservationConfirmation({
+          clientName: data.client_name,
+          clientPhone: data.client_phone,
+          serviceName: svc.name,
+          barberName: barber.full_name,
+          date: selectedDate ? format(selectedDate, "EEEE d 'de' MMMM, yyyy", { locale: es }) : data.reservation_date,
+          time: data.reservation_time,
+          locationName: loc.name,
+        });
+      }
+
       toast({
         title: "¡Reserva confirmada!",
         description: "Te contactaremos pronto para confirmar tu cita.",

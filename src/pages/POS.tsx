@@ -42,8 +42,10 @@ import { PaymentModal } from "@/components/pos/PaymentModal";
 import { DailySalesModal } from "@/components/pos/DailySalesModal";
 import { SavedSalesModal } from "@/components/pos/SavedSalesModal";
 import { CartItem } from "@/components/pos/CartItem";
+import { ThermalReceipt } from "@/components/pos/ThermalReceipt";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { sendSaleReceipt } from "@/lib/whatsapp";
 
 interface CartItemType {
   id: string;
@@ -84,6 +86,7 @@ export default function POS() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showDailySales, setShowDailySales] = useState(false);
   const [showSavedSales, setShowSavedSales] = useState(false);
+  const [printReceiptData, setPrintReceiptData] = useState<any | null>(null);
 
   // Saved sales (local state)
   const [savedSales, setSavedSales] = useState<SavedSale[]>([]);
@@ -428,9 +431,53 @@ export default function POS() {
       queryClient.invalidateQueries({ queryKey: ["pos-today-reservations"] });
       queryClient.invalidateQueries({ queryKey: ["reservations"] });
 
-      const clientName = clientId
-        ? clients.find(c => c.id === clientId)?.full_name || "Cliente"
-        : "Cliente General";
+      const clientObj = clientId ? clients.find(c => c.id === clientId) : null;
+      const clientName = clientObj?.full_name || "Cliente General";
+      const clientPhone = clientObj?.phone || "";
+
+      // Get barber names for receipt items
+      const receiptItems = cart.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        type: item.type,
+        barberName: item.barberId ? barbers.find(b => b.id === item.barberId)?.full_name : undefined,
+      }));
+
+      const primaryBarberName = servicesInCartItems[0]?.barberId 
+        ? barbers.find(b => b.id === servicesInCartItems[0].barberId)?.full_name 
+        : undefined;
+
+      // Print receipt if option selected
+      if (details.printReceipt) {
+        setPrintReceiptData({
+          ticketNumber,
+          items: receiptItems,
+          subtotal,
+          discount: totalDiscount,
+          tip: tipAmount,
+          total,
+          paymentMethod: method,
+          cashReceived: details.cashReceived,
+          change: details.change,
+          clientName,
+          clientPhone,
+          barberName: primaryBarberName,
+        });
+      }
+
+      // Send WhatsApp receipt if option selected
+      if (details.sendWhatsApp && (details.contactInfo || clientPhone)) {
+        const whatsAppPhone = details.contactInfo || clientPhone;
+        sendSaleReceipt({
+          clientPhone: whatsAppPhone as string,
+          clientName,
+          ticketNumber,
+          items: receiptItems,
+          total,
+          paymentMethod: method,
+        });
+      }
 
       clearCart();
       setShowPaymentModal(false);
@@ -910,6 +957,14 @@ export default function POS() {
         onResume={resumeSale}
         onDelete={deleteSavedSale}
       />
+
+      {/* Thermal Receipt Printing */}
+      {printReceiptData && (
+        <ThermalReceipt
+          {...printReceiptData}
+          onClose={() => setPrintReceiptData(null)}
+        />
+      )}
     </div>
   );
 }
