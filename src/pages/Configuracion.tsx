@@ -10,6 +10,7 @@ import {
   Link,
   Shield,
   Palette,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ import LoyaltyTab from "@/components/configuracion/LoyaltyTab";
 import IntegrationsTab from "@/components/configuracion/IntegrationsTab";
 import BackupSecurityTab from "@/components/configuracion/BackupSecurityTab";
 import AppearanceTab from "@/components/configuracion/AppearanceTab";
+import ChangePasswordTab from "@/components/configuracion/ChangePasswordTab";
 
 const tabs = [
   { id: "business", label: "Información del Negocio", icon: Store },
@@ -35,6 +37,7 @@ const tabs = [
   { id: "integrations", label: "Integraciones", icon: Link },
   { id: "security", label: "Respaldo y Seguridad", icon: Shield },
   { id: "appearance", label: "Apariencia", icon: Palette },
+  { id: "password", label: "Cambiar Contraseña", icon: Lock },
 ];
 
 export default function Configuracion() {
@@ -62,6 +65,8 @@ export default function Configuracion() {
         return <BackupSecurityTab />;
       case "appearance":
         return <AppearanceTab />;
+      case "password":
+        return <ChangePasswordTab />;
       default:
         return <BusinessInfoTab />;
     }
