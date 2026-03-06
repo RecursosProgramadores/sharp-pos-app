@@ -109,7 +109,31 @@ export default function Clientes() {
   };
 
   const handleExportCSV = () => {
-    toast.success("Base de datos exportada exitosamente");
+    try {
+      const headers = ["Nombre", "Teléfono", "Email", "Nivel", "Visitas", "Total Gastado", "Puntos", "Última Visita", "Cumpleaños"];
+      const rows = clients.map(c => [
+        c.full_name,
+        c.phone,
+        c.email || "",
+        c.level,
+        c.visits,
+        c.total_spent,
+        c.points,
+        c.last_visit || "",
+        c.birth_date || "",
+      ]);
+      const csvContent = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(",")).join("\n");
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `clientes_${new Date().toISOString().split("T")[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Base de datos exportada exitosamente");
+    } catch {
+      toast.error("Error al exportar");
+    }
   };
 
   const handleDeleteClient = async (id: string) => {

@@ -117,7 +117,7 @@ export default function Barberos() {
                     key={barber.id}
                     barber={barber}
                     onViewDetails={(b) => { setSelectedBarber(b); setIsDetailsOpen(true); }}
-                    onEdit={(b) => toast.info(`Editando: ${b.name}`)}
+                    onEdit={(b) => { setSelectedBarber(b); setIsDetailsOpen(true); }}
                     onToggleStatus={toggleStatus}
                   />
                 ))}
