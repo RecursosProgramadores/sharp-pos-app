@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { TrustSection } from "@/components/landing/TrustSection";
 import { EssenceSection } from "@/components/landing/EssenceSection";
+import { ObjectivesSection } from "@/components/landing/ObjectivesSection";
 import { LandingServices } from "@/components/landing/LandingServices";
 import { LandingTeam } from "@/components/landing/LandingTeam";
 import { LandingGallery } from "@/components/landing/LandingGallery";
