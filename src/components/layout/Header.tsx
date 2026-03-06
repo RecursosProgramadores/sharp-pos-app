@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -10,6 +10,7 @@ import {
   Moon,
   Sun,
   Contrast,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,22 +31,47 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import {
+  useRealtimeNotifications,
+  requestNotificationPermission,
+  type RealtimeNotification,
+} from "@/hooks/useRealtimeNotifications";
 
 interface HeaderProps {
   sidebarCollapsed: boolean;
 }
 
-const notifications = [
-  { id: 1, title: "Nueva cita agendada", time: "Hace 5 min", unread: true },
-  { id: 2, title: "Stock bajo: Gel fijador", time: "Hace 1 hora", unread: true },
-  { id: 3, title: "Pago recibido #1234", time: "Hace 2 horas", unread: false },
-];
+function timeAgo(date: Date): string {
+  const diff = Math.round((Date.now() - date.getTime()) / 1000);
+  if (diff < 60) return "Justo ahora";
+  if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} hora(s)`;
+  return `Hace ${Math.floor(diff / 86400)} día(s)`;
+}
 
 export function Header({ sidebarCollapsed }: HeaderProps) {
   const [theme, setTheme] = useState<"light" | "dark" | "high-contrast">("light");
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
+
+  // Request browser notification permission on mount
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  const handleNewNotification = useCallback((notification: RealtimeNotification) => {
+    setNotifications((prev) => [notification, ...prev].slice(0, 20));
+  }, []);
+
+  // Subscribe to realtime reservation notifications
+  useRealtimeNotifications(handleNewNotification);
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
+  const markAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
 
   const handleThemeChange = (newTheme: "light" | "dark" | "high-contrast") => {
     setTheme(newTheme);
@@ -127,7 +153,7 @@ export function Header({ sidebarCollapsed }: HeaderProps) {
               {unreadCount > 0 && (
                 <Badge
                   variant="secondary"
-                  className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive text-destructive-foreground animate-pulse"
                 >
                   {unreadCount}
                 </Badge>
@@ -135,36 +161,68 @@ export function Header({ sidebarCollapsed }: HeaderProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-80 p-0 bg-popover">
-            <div className="border-b border-border p-4">
+            <div className="border-b border-border p-4 flex items-center justify-between">
               <h4 className="font-display text-lg">Notificaciones</h4>
+              {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={markAllRead}>
+                  Marcar leídas
+                </Button>
+              )}
             </div>
             <div className="max-h-80 overflow-auto">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={cn(
-                    "flex items-start gap-3 p-4 border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer",
-                    notification.unread && "bg-primary/5"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "h-2 w-2 rounded-full mt-2 flex-shrink-0",
-                      notification.unread ? "bg-secondary" : "bg-transparent"
-                    )}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{notification.title}</p>
-                    <p className="text-xs text-muted-foreground">{notification.time}</p>
-                  </div>
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  No hay notificaciones nuevas
                 </div>
-              ))}
+              ) : (
+                notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={cn(
+                      "flex items-start gap-3 p-4 border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer",
+                      notification.unread && "bg-primary/5"
+                    )}
+                    onClick={() => {
+                      if (notification.type === "reservation") {
+                        navigate("/admin/reservas");
+                      }
+                      setNotifications((prev) =>
+                        prev.map((n) =>
+                          n.id === notification.id ? { ...n, unread: false } : n
+                        )
+                      );
+                    }}
+                  >
+                    <div
+                      className={cn(
+                        "h-2 w-2 rounded-full mt-2 flex-shrink-0",
+                        notification.unread ? "bg-secondary" : "bg-transparent"
+                      )}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <p className="text-sm font-medium truncate">{notification.title}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{notification.body}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{timeAgo(notification.time)}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-            <div className="border-t border-border p-2">
-              <Button variant="ghost" className="w-full text-sm">
-                Ver todas las notificaciones
-              </Button>
-            </div>
+            {notifications.length > 0 && (
+              <div className="border-t border-border p-2">
+                <Button
+                  variant="ghost"
+                  className="w-full text-sm"
+                  onClick={() => navigate("/admin/reservas")}
+                >
+                  Ver todas las reservas
+                </Button>
+              </div>
+            )}
           </PopoverContent>
         </Popover>
 
@@ -196,7 +254,7 @@ export function Header({ sidebarCollapsed }: HeaderProps) {
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={handleSignOut}
             >
