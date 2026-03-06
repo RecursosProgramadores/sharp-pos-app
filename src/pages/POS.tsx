@@ -46,6 +46,7 @@ import { ThermalReceipt } from "@/components/pos/ThermalReceipt";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { sendSaleReceipt } from "@/lib/whatsapp";
+import { logActivity } from "@/lib/security";
 
 interface CartItemType {
   id: string;
@@ -478,6 +479,19 @@ export default function POS() {
           paymentMethod: method,
         });
       }
+
+      // Log activity for audit trail
+      logActivity({
+        action: 'sale_completed',
+        entityType: 'sale',
+        details: {
+          ticket: ticketNumber,
+          total,
+          items: cart.length,
+          paymentMethod: method,
+          clientId,
+        },
+      });
 
       clearCart();
       setShowPaymentModal(false);

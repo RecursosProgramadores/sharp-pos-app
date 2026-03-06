@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Scissors, Loader2, Eye, EyeOff, ShieldCheck, ShoppingCart } from "lucide-react";
+import { Scissors, Loader2, Eye, EyeOff, ShieldCheck, ShoppingCart, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { isRateLimited, getRateLimitRemainingSeconds, sanitizeInput } from "@/lib/security";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255),
@@ -32,6 +33,24 @@ export default function Auth() {
     }
   }, [user, loading, navigate]);
 
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+
+  // Check lockout timer
+  useEffect(() => {
+    if (!lockoutUntil) return;
+    const interval = setInterval(() => {
+      if (Date.now() >= lockoutUntil) {
+        setLockoutUntil(null);
+        setLoginAttempts(0);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
+
+  const isLockedOut = lockoutUntil && Date.now() < lockoutUntil;
+  const lockoutRemaining = lockoutUntil ? Math.ceil((lockoutUntil - Date.now()) / 1000) : 0;
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -40,7 +59,16 @@ export default function Auth() {
       return;
     }
 
-    const result = loginSchema.safeParse({ email, password });
+    // Rate limiting - brute force protection
+    if (isRateLimited('login', 5, 120000)) {
+      const remaining = getRateLimitRemainingSeconds('login');
+      setLockoutUntil(Date.now() + remaining * 1000);
+      toast.error(`Demasiados intentos. Espera ${remaining} segundos.`);
+      return;
+    }
+
+    const sanitizedEmail = sanitizeInput(email).toLowerCase().trim();
+    const result = loginSchema.safeParse({ email: sanitizedEmail, password });
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors;
       if (errors.email) toast.error(errors.email[0]);
@@ -50,19 +78,27 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(sanitizedEmail, password);
       
       if (error) {
+        setLoginAttempts(prev => prev + 1);
+        // Generic error message - don't reveal if email exists
         if (error.message.includes("Invalid login credentials")) {
-          toast.error("Credenciales incorrectas. Verifica tu email y contraseña.");
+          toast.error("Credenciales incorrectas. Verifica tus datos.");
         } else if (error.message.includes("Email not confirmed")) {
           toast.error("Email no confirmado. Revisa tu bandeja de entrada.");
         } else {
-          toast.error("Error al iniciar sesión: " + error.message);
+          toast.error("Error al iniciar sesión. Intenta nuevamente.");
+        }
+        
+        // Lock out after 5 failed attempts
+        if (loginAttempts + 1 >= 5) {
+          setLockoutUntil(Date.now() + 120000); // 2 min lockout
         }
         return;
       }
 
+      setLoginAttempts(0);
       toast.success("¡Bienvenido!");
       navigate("/admin");
     } catch (error) {
@@ -196,11 +232,19 @@ export default function Auth() {
                   </Button>
                 </div>
               </div>
+              {isLockedOut && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <p className="text-sm text-destructive">
+                    Cuenta bloqueada temporalmente. Espera {lockoutRemaining}s
+                  </p>
+                </div>
+              )}
               <Button 
                 type="submit" 
                 className="w-full h-11 text-base font-medium" 
                 size="lg" 
-                disabled={isLoading || !selectedRole}
+                disabled={isLoading || !selectedRole || !!isLockedOut}
               >
                 {isLoading ? (
                   <>

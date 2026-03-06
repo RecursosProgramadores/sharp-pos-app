@@ -24,7 +24,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserRole = async (userId: string): Promise<UserRole> => {
     try {
-      console.log("Fetching role for user:", userId);
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
@@ -32,14 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.error("Error fetching role:", error);
         return null;
       }
       
-      console.log("Role data:", data);
       return (data?.role as UserRole) ?? null;
     } catch (error) {
-      console.error("Error in fetchUserRole:", error);
       return null;
     }
   };
@@ -57,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log("Auth state change:", event, currentSession?.user?.email);
         
         if (!isMounted) return;
 
