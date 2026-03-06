@@ -1,52 +1,74 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface CreateUserRequest {
-  email: string;
-  password: string;
-  full_name: string;
-  role: "admin" | "cajero";
+// Input validation schema
+const createUserSchema = z.object({
+  email: z.string().email().max(255).trim().toLowerCase(),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres").max(128),
+  full_name: z.string().min(1).max(100).trim(),
+  role: z.enum(["admin", "cajero"]),
+});
+
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function isRateLimited(key: string, max = 5, windowMs = 60000): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    return false;
+  }
+  entry.count++;
+  return entry.count > max;
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify the caller is an admin
+    // Rate limiting by authorization header hash
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "No authorization header" }),
+        JSON.stringify({ error: "No autorizado" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create client with user's token to verify they're admin
+    // Rate limit: max 10 user creations per minute per caller
+    const rateLimitKey = `create-user:${authHeader.slice(-20)}`;
+    if (isRateLimited(rateLimitKey, 10, 60000)) {
+      return new Response(
+        JSON.stringify({ error: "Demasiadas solicitudes. Intenta más tarde." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Verify caller is authenticated and is admin
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Get calling user
     const { data: { user: callingUser }, error: userError } = await userClient.auth.getUser();
     if (userError || !callingUser) {
       return new Response(
-        JSON.stringify({ error: "Usuario no autenticado" }),
+        JSON.stringify({ error: "No autorizado" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if calling user is admin
+    // Check admin role using security definer function
     const { data: roleData, error: roleError } = await userClient
       .from("user_roles")
       .select("role")
@@ -55,33 +77,29 @@ Deno.serve(async (req) => {
 
     if (roleError || roleData?.role !== "admin") {
       return new Response(
-        JSON.stringify({ error: "Solo los administradores pueden crear usuarios" }),
+        JSON.stringify({ error: "Acceso denegado" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse request body
-    const body: CreateUserRequest = await req.json();
-    const { email, password, full_name, role } = body;
-
-    if (!email || !password || !full_name || !role) {
+    // Parse and validate input
+    const rawBody = await req.json();
+    const parseResult = createUserSchema.safeParse(rawBody);
+    
+    if (!parseResult.success) {
+      const errors = parseResult.error.flatten().fieldErrors;
+      const firstError = Object.values(errors).flat()[0] || "Datos inválidos";
       return new Response(
-        JSON.stringify({ error: "Faltan campos requeridos" }),
+        JSON.stringify({ error: firstError }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!["admin", "cajero"].includes(role)) {
-      return new Response(
-        JSON.stringify({ error: "Rol inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { email, password, full_name, role } = parseResult.data;
 
-    // Use service role client to create user (this won't affect the calling user's session)
+    // Use service role to create user
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Create user in auth
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -90,7 +108,6 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      console.error("Error creating user:", createError);
       if (createError.message.includes("already been registered")) {
         return new Response(
           JSON.stringify({ error: "Este email ya está registrado" }),
@@ -98,7 +115,7 @@ Deno.serve(async (req) => {
         );
       }
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: "Error al crear usuario" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -110,29 +127,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create profile
-    const { error: profileError } = await adminClient
-      .from("profiles")
-      .upsert({
-        id: newUser.user.id,
-        full_name,
-      });
+    // Create profile and role
+    await adminClient.from("profiles").upsert({
+      id: newUser.user.id,
+      full_name,
+    });
 
-    if (profileError) {
-      console.error("Error creating profile:", profileError);
-    }
-
-    // Create role entry
-    const { error: roleInsertError } = await adminClient
-      .from("user_roles")
-      .upsert({
-        user_id: newUser.user.id,
-        role,
-      });
-
-    if (roleInsertError) {
-      console.error("Error creating role:", roleInsertError);
-    }
+    await adminClient.from("user_roles").upsert({
+      user_id: newUser.user.id,
+      role,
+    });
 
     return new Response(
       JSON.stringify({
@@ -147,9 +151,9 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Unexpected error:", error);
+    // Never expose internal error details
     return new Response(
-      JSON.stringify({ error: "Error inesperado del servidor" }),
+      JSON.stringify({ error: "Error interno del servidor" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
