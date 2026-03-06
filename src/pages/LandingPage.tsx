@@ -15,14 +15,21 @@ import { ReservationModal } from "@/components/landing/ReservationModal";
 
 export default function LandingPage() {
   const [isReservationOpen, setIsReservationOpen] = useState(false);
+  const [preSelectedServiceId, setPreSelectedServiceId] = useState<string | undefined>();
 
-  const openReservation = () => setIsReservationOpen(true);
-  const closeReservation = () => setIsReservationOpen(false);
+  const openReservation = (serviceId?: string) => {
+    setPreSelectedServiceId(serviceId);
+    setIsReservationOpen(true);
+  };
+  const closeReservation = () => {
+    setIsReservationOpen(false);
+    setPreSelectedServiceId(undefined);
+  };
 
   return (
     <div className="min-h-screen bg-barber-bg text-barber-text">
-      <LandingNavbar onReserveClick={openReservation} />
-      <LandingHero onReserveClick={openReservation} />
+      <LandingNavbar onReserveClick={() => openReservation()} />
+      <LandingHero onReserveClick={() => openReservation()} />
       <TrustSection />
       <EssenceSection />
       <ObjectivesSection />
@@ -31,9 +38,13 @@ export default function LandingPage() {
       <LandingGallery />
       <LandingTestimonials />
       <LandingContact />
-      <FinalCTA onReserveClick={openReservation} />
+      <FinalCTA onReserveClick={() => openReservation()} />
       <LandingFooter />
-      <ReservationModal open={isReservationOpen} onClose={closeReservation} />
+      <ReservationModal
+        open={isReservationOpen}
+        onClose={closeReservation}
+        preSelectedServiceId={preSelectedServiceId}
+      />
     </div>
   );
 }
