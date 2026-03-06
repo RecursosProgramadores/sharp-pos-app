@@ -7,6 +7,7 @@ import { BarberRanking } from "@/components/dashboard/BarberRanking";
 import { TodayAppointments } from "@/components/dashboard/TodayAppointments";
 import { AlertsTimeline } from "@/components/dashboard/AlertsTimeline";
 import { BarberSchedule } from "@/components/dashboard/BarberSchedule";
+import { WeeklyReportCard } from "@/components/dashboard/WeeklyReportCard";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
@@ -49,14 +50,17 @@ export default function Dashboard() {
         <BarberRanking />
       </div>
 
-      {/* Today's Appointments + Alerts */}
+      {/* Today's Appointments + Weekly Report */}
       <div className="grid gap-6 lg:grid-cols-2">
         <TodayAppointments />
-        <AlertsTimeline />
+        <WeeklyReportCard />
       </div>
 
-      {/* Barber Schedule */}
-      <BarberSchedule />
+      {/* Alerts + Schedule */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AlertsTimeline />
+        <BarberSchedule />
+      </div>
     </div>
   );
 }
