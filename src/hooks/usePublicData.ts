@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Location, Service } from "@/types/reservation";
+import { sanitizeInput, isValidPhone, isValidEmail } from "@/lib/security";
 
 export function useLocations() {
   return useQuery({
@@ -61,9 +62,30 @@ export async function createReservation(reservationData: {
   reservation_date: string;
   reservation_time: string;
 }) {
+  // Sanitize all string inputs
+  const sanitized = {
+    ...reservationData,
+    client_name: sanitizeInput(reservationData.client_name).slice(0, 100),
+    client_phone: reservationData.client_phone.replace(/[^\d+\-\s()]/g, '').slice(0, 20),
+    client_email: reservationData.client_email 
+      ? sanitizeInput(reservationData.client_email).slice(0, 255) 
+      : undefined,
+  };
+
+  // Validate required fields
+  if (!sanitized.client_name || sanitized.client_name.length < 2) {
+    throw new Error('Nombre inválido');
+  }
+  if (!isValidPhone(sanitized.client_phone)) {
+    throw new Error('Teléfono inválido');
+  }
+  if (sanitized.client_email && !isValidEmail(sanitized.client_email)) {
+    throw new Error('Email inválido');
+  }
+
   const { error } = await supabase
     .from("reservations")
-    .insert([reservationData]);
+    .insert([sanitized]);
 
   if (error) throw error;
   return true;
