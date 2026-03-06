@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,6 +17,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Star,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ type ReservationFormData = z.infer<typeof reservationSchema>;
 interface ReservationModalProps {
   open: boolean;
   onClose: () => void;
+  preSelectedServiceId?: string;
 }
 
 const timeSlots = [
@@ -59,12 +61,15 @@ const STEPS = [
   { id: 5, label: "Datos", icon: Phone },
 ];
 
-export function ReservationModal({ open, onClose }: ReservationModalProps) {
+const CATEGORY_ORDER = ["Cortes", "Degradados", "Ondulados", "Tintes", "Otros Servicios"];
+
+export function ReservationModal({ open, onClose, preSelectedServiceId }: ReservationModalProps) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   const { data: locations = [] } = useLocations();
   const { data: services = [] } = useServices();
@@ -91,10 +96,34 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
     },
   });
 
+  // Pre-select service when modal opens with a preSelectedServiceId
+  useEffect(() => {
+    if (open && preSelectedServiceId) {
+      setValue("service_id", preSelectedServiceId);
+      // Find the category of the pre-selected service to expand it
+      const svc = services.find(s => s.id === preSelectedServiceId);
+      if (svc) {
+        setExpandedCategory(svc.category);
+      }
+    }
+  }, [open, preSelectedServiceId, services, setValue]);
+
   const watchedValues = watch();
   const selectedService = services.find((s) => s.id === watchedValues.service_id);
   const selectedBarber = barbers.find((b) => b.id === watchedValues.barber_id);
   const selectedLocation = locations.find((l) => l.id === watchedValues.location_id);
+
+  // Group services by category
+  const servicesByCategory: Record<string, typeof services> = {};
+  services.forEach((s) => {
+    if (!servicesByCategory[s.category]) servicesByCategory[s.category] = [];
+    servicesByCategory[s.category].push(s);
+  });
+  const orderedCategories = CATEGORY_ORDER.filter((c) => servicesByCategory[c]?.length > 0);
+  // Add any categories not in CATEGORY_ORDER
+  Object.keys(servicesByCategory).forEach((c) => {
+    if (!orderedCategories.includes(c)) orderedCategories.push(c);
+  });
 
   const canProceed = () => {
     switch (step) {
@@ -105,6 +134,24 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
       case 5: return !!watchedValues.client_name && !!watchedValues.client_phone;
       default: return false;
     }
+  };
+
+  // Auto-advance when selecting location
+  const handleSelectLocation = (id: string) => {
+    setValue("location_id", id);
+    setTimeout(() => setStep(2), 350);
+  };
+
+  // Auto-advance when selecting service
+  const handleSelectService = (id: string) => {
+    setValue("service_id", id);
+    setTimeout(() => setStep(3), 350);
+  };
+
+  // Auto-advance when selecting barber
+  const handleSelectBarber = (id: string) => {
+    setValue("barber_id", id);
+    setTimeout(() => setStep(4), 350);
   };
 
   const onSubmit = async (data: ReservationFormData) => {
@@ -122,7 +169,6 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
       });
       setSuccess(true);
 
-      // Auto-send WhatsApp confirmation
       const svc = services.find(s => s.id === data.service_id);
       const barber = barbers.find(b => b.id === data.barber_id);
       const loc = locations.find(l => l.id === data.location_id);
@@ -160,6 +206,7 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
     setSuccess(false);
     setSelectedDate(undefined);
     setStep(1);
+    setExpandedCategory(null);
     onClose();
   };
 
@@ -176,22 +223,15 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md p-0 border-barber-border bg-barber-bg overflow-hidden">
           <div className="relative flex flex-col items-center py-12 px-8 text-center">
-            {/* Background glow */}
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent" />
-
+            <div className="absolute inset-0 bg-gradient-to-b from-barber-red/10 via-transparent to-transparent" />
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-6 mx-auto shadow-[0_0_40px_hsl(358_77%_46%/0.3)]">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-barber-red to-barber-orange flex items-center justify-center mb-6 mx-auto shadow-[0_0_40px_hsl(358_77%_46%/0.3)]">
                 <CheckCircle className="h-10 w-10 text-white" />
               </div>
               <h2 className="font-display text-3xl text-barber-text mb-2">¡Reserva Confirmada!</h2>
-              <p className="text-barber-muted mb-2">
-                Tu cita ha sido registrada exitosamente.
-              </p>
-              <p className="text-barber-muted text-sm mb-8">
-                Te contactaremos por WhatsApp para confirmar los detalles.
-              </p>
+              <p className="text-barber-muted mb-2">Tu cita ha sido registrada exitosamente.</p>
+              <p className="text-barber-muted text-sm mb-8">Te contactaremos por WhatsApp para confirmar los detalles.</p>
 
-              {/* Summary card */}
               <div className="w-full rounded-xl bg-barber-card border border-barber-border p-4 mb-6 text-left space-y-2">
                 {selectedService && (
                   <div className="flex justify-between text-sm">
@@ -221,7 +261,7 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
 
               <Button
                 onClick={handleClose}
-                className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:shadow-[0_0_30px_hsl(358_77%_46%/0.3)] transition-all"
+                className="w-full py-3 bg-gradient-to-r from-barber-red to-barber-orange text-white font-semibold rounded-xl hover:shadow-[0_0_30px_hsl(358_77%_46%/0.3)] transition-all"
               >
                 Cerrar
               </Button>
@@ -237,9 +277,9 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
       <DialogContent className="sm:max-w-2xl p-0 border-barber-border bg-barber-bg overflow-hidden max-h-[92vh]">
         {/* Header */}
         <div className="relative px-6 pt-6 pb-4 border-b border-barber-border">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-barber-red/5 via-barber-orange/5 to-transparent" />
           <div className="relative flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-[0_0_20px_hsl(358_77%_46%/0.2)]">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-barber-red to-barber-orange flex items-center justify-center shadow-[0_0_20px_hsl(358_77%_46%/0.2)]">
               <Scissors className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -248,22 +288,33 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
             </div>
           </div>
 
-          {/* Step indicator */}
-          <div className="relative flex items-center gap-1">
-            {STEPS.map((s, i) => (
-              <div key={s.id} className="flex-1 flex items-center">
-                <div
+          {/* Step indicator - clickable dots */}
+          <div className="relative flex items-center gap-2">
+            {STEPS.map((s) => {
+              const StepIcon = s.icon;
+              const isCompleted = step > s.id;
+              const isCurrent = step === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    if (isCompleted) setStep(s.id);
+                  }}
                   className={cn(
-                    "h-1.5 w-full rounded-full transition-all duration-500",
-                    step > s.id
-                      ? "bg-gradient-to-r from-primary to-secondary"
-                      : step === s.id
-                      ? "bg-primary/60"
-                      : "bg-barber-border"
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 border",
+                    isCompleted
+                      ? "bg-barber-red/10 border-barber-red/30 text-barber-red cursor-pointer hover:bg-barber-red/20"
+                      : isCurrent
+                      ? "bg-barber-red text-white border-barber-red shadow-[0_0_15px_hsl(358_77%_46%/0.3)]"
+                      : "bg-barber-card border-barber-border text-barber-muted cursor-default"
                   )}
-                />
-              </div>
-            ))}
+                >
+                  <StepIcon className="h-3 w-3" />
+                  <span className="hidden sm:inline">{s.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -279,11 +330,11 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                     <button
                       key={location.id}
                       type="button"
-                      onClick={() => setValue("location_id", location.id)}
+                      onClick={() => handleSelectLocation(location.id)}
                       className={cn(
                         "w-full text-left p-4 rounded-xl border transition-all duration-300 group",
                         watchedValues.location_id === location.id
-                          ? "border-primary bg-primary/10 shadow-[0_0_20px_hsl(358_77%_46%/0.1)]"
+                          ? "border-barber-red bg-barber-red/10 shadow-[0_0_20px_hsl(358_77%_46%/0.1)]"
                           : "border-barber-border bg-barber-card hover:border-barber-muted"
                       )}
                     >
@@ -292,7 +343,7 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                           className={cn(
                             "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors",
                             watchedValues.location_id === location.id
-                              ? "bg-primary text-white"
+                              ? "bg-barber-red text-white"
                               : "bg-barber-border text-barber-muted"
                           )}
                         >
@@ -317,44 +368,113 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
               </div>
             )}
 
-            {/* Step 2: Service */}
+            {/* Step 2: Service - grouped by category */}
             {step === 2 && (
               <div className="space-y-3">
                 <h3 className="font-display text-lg text-barber-text mb-1">¿Qué servicio deseas?</h3>
-                <p className="text-barber-muted text-sm mb-4">Todos incluyen lavado, cepillado y productos premium.</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {services.map((service) => (
-                    <button
-                      key={service.id}
-                      type="button"
-                      onClick={() => setValue("service_id", service.id)}
-                      className={cn(
-                        "w-full text-left p-4 rounded-xl border transition-all duration-300 relative overflow-hidden",
-                        watchedValues.service_id === service.id
-                          ? "border-primary bg-primary/10 shadow-[0_0_20px_hsl(358_77%_46%/0.1)]"
-                          : "border-barber-border bg-barber-card hover:border-barber-muted"
-                      )}
-                    >
-                      {service.is_popular && (
-                        <span className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-secondary">
-                          <Star className="h-3 w-3 fill-current" /> Popular
-                        </span>
-                      )}
-                      <span className="text-[10px] uppercase tracking-widest text-barber-muted font-semibold">
-                        {service.category}
-                      </span>
-                      <p className="text-barber-text font-semibold mt-0.5 leading-tight">{service.name}</p>
-                      {service.description && (
-                        <p className="text-barber-muted text-xs mt-1 line-clamp-2">{service.description}</p>
-                      )}
-                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-barber-border">
-                        <span className="text-barber-muted text-xs flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {formatDuration(service.duration_minutes)}
-                        </span>
-                        <span className="font-display text-lg font-extrabold text-primary">S/{service.price}</span>
+                <p className="text-barber-muted text-sm mb-4">Selecciona una categoría y elige tu servicio.</p>
+
+                {/* Selected service indicator */}
+                {selectedService && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-barber-red/10 border border-barber-red/30 mb-4">
+                    <CheckCircle className="h-4 w-4 text-barber-red shrink-0" />
+                    <span className="text-barber-text text-sm font-medium">{selectedService.name}</span>
+                    <span className="text-barber-red font-bold ml-auto">S/{selectedService.price}</span>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {orderedCategories.map((category) => {
+                    const catServices = servicesByCategory[category];
+                    const isExpanded = expandedCategory === category;
+                    const hasSelected = catServices.some(s => s.id === watchedValues.service_id);
+
+                    return (
+                      <div key={category} className="rounded-xl border border-barber-border overflow-hidden bg-barber-card">
+                        {/* Category header */}
+                        <button
+                          type="button"
+                          onClick={() => setExpandedCategory(isExpanded ? null : category)}
+                          className={cn(
+                            "w-full flex items-center justify-between px-4 py-3.5 transition-all duration-300",
+                            isExpanded
+                              ? "bg-barber-red/5 border-b border-barber-border"
+                              : "hover:bg-barber-bg/50"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                              hasSelected ? "bg-barber-red text-white" : "bg-barber-border text-barber-muted"
+                            )}>
+                              <Scissors className="h-4 w-4" />
+                            </div>
+                            <div className="text-left">
+                              <span className="text-barber-text font-semibold text-sm">{category}</span>
+                              <span className="text-barber-muted text-xs ml-2">({catServices.length})</span>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn(
+                            "h-4 w-4 text-barber-muted transition-transform duration-300",
+                            isExpanded && "rotate-180"
+                          )} />
+                        </button>
+
+                        {/* Services list */}
+                        {isExpanded && (
+                          <div className="divide-y divide-barber-border">
+                            {catServices.map((service) => (
+                              <button
+                                key={service.id}
+                                type="button"
+                                onClick={() => handleSelectService(service.id)}
+                                className={cn(
+                                  "w-full text-left px-4 py-3 transition-all duration-200 flex items-center gap-3",
+                                  watchedValues.service_id === service.id
+                                    ? "bg-barber-red/10"
+                                    : "hover:bg-barber-bg/50"
+                                )}
+                              >
+                                {/* Selection indicator */}
+                                <div className={cn(
+                                  "w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all",
+                                  watchedValues.service_id === service.id
+                                    ? "border-barber-red bg-barber-red"
+                                    : "border-barber-border"
+                                )}>
+                                  {watchedValues.service_id === service.id && (
+                                    <CheckCircle className="h-3 w-3 text-white" />
+                                  )}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-barber-text font-medium text-sm">{service.name}</span>
+                                    {service.is_popular && (
+                                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-barber-orange">
+                                        <Star className="h-2.5 w-2.5 fill-current" /> Popular
+                                      </span>
+                                    )}
+                                  </div>
+                                  {service.description && (
+                                    <p className="text-barber-muted text-xs mt-0.5 line-clamp-1">{service.description}</p>
+                                  )}
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <span className="font-display text-base font-extrabold text-barber-red">S/{service.price}</span>
+                                  <div className="text-barber-muted text-[10px] flex items-center gap-0.5 justify-end">
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {formatDuration(service.duration_minutes)}
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -369,11 +489,11 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                     <button
                       key={barber.id}
                       type="button"
-                      onClick={() => setValue("barber_id", barber.id)}
+                      onClick={() => handleSelectBarber(barber.id)}
                       className={cn(
                         "text-center p-4 rounded-xl border transition-all duration-300",
                         watchedValues.barber_id === barber.id
-                          ? "border-primary bg-primary/10 shadow-[0_0_20px_hsl(358_77%_46%/0.1)]"
+                          ? "border-barber-red bg-barber-red/10 shadow-[0_0_20px_hsl(358_77%_46%/0.1)]"
                           : "border-barber-border bg-barber-card hover:border-barber-muted"
                       )}
                     >
@@ -386,7 +506,7 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-barber-card to-barber-bg flex items-center justify-center">
-                            <span className="font-display text-lg font-extrabold text-primary/30">
+                            <span className="font-display text-lg font-extrabold text-barber-red/30">
                               {barber.full_name.split(" ").map((n) => n[0]).join("")}
                             </span>
                           </div>
@@ -410,10 +530,9 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                   <p className="text-barber-muted text-sm mb-4">Selecciona fecha y hora para tu cita.</p>
                 </div>
 
-                {/* Date picker */}
                 <div className="space-y-2">
                   <label className="text-barber-text text-sm font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-primary" /> Fecha
+                    <Calendar className="h-4 w-4 text-barber-red" /> Fecha
                   </label>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -425,7 +544,7 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                           errors.reservation_date && "border-destructive"
                         )}
                       >
-                        <Calendar className="h-4 w-4 mr-2 text-primary" />
+                        <Calendar className="h-4 w-4 mr-2 text-barber-red" />
                         {selectedDate
                           ? format(selectedDate, "EEEE d 'de' MMMM, yyyy", { locale: es })
                           : "Selecciona una fecha"}
@@ -449,10 +568,9 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                   </Popover>
                 </div>
 
-                {/* Time slots */}
                 <div className="space-y-2">
                   <label className="text-barber-text text-sm font-medium flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" /> Hora
+                    <Clock className="h-4 w-4 text-barber-red" /> Hora
                   </label>
                   <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {timeSlots.map((time) => (
@@ -463,7 +581,7 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                         className={cn(
                           "py-2.5 px-2 rounded-lg text-sm font-medium transition-all duration-200 border",
                           watchedValues.reservation_time === time
-                            ? "border-primary bg-primary text-white shadow-[0_0_15px_hsl(358_77%_46%/0.3)]"
+                            ? "border-barber-red bg-barber-red text-white shadow-[0_0_15px_hsl(358_77%_46%/0.3)]"
                             : "border-barber-border bg-barber-card text-barber-muted hover:border-barber-muted hover:text-barber-text"
                         )}
                       >
@@ -483,31 +601,30 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                   <p className="text-barber-muted text-sm mb-4">Para confirmar tu reserva por WhatsApp.</p>
                 </div>
 
-                {/* Summary */}
                 <div className="rounded-xl bg-barber-card border border-barber-border p-4 space-y-2 mb-4">
                   <p className="text-xs uppercase tracking-wider text-barber-muted font-semibold mb-2">Resumen de tu cita</p>
                   {selectedLocation && (
                     <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <MapPin className="h-3.5 w-3.5 text-barber-red shrink-0" />
                       <span className="text-barber-text">{selectedLocation.name}</span>
                     </div>
                   )}
                   {selectedService && (
                     <div className="flex items-center gap-2 text-sm">
-                      <Scissors className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <Scissors className="h-3.5 w-3.5 text-barber-red shrink-0" />
                       <span className="text-barber-text">{selectedService.name}</span>
-                      <span className="text-primary font-bold ml-auto">S/{selectedService.price}</span>
+                      <span className="text-barber-red font-bold ml-auto">S/{selectedService.price}</span>
                     </div>
                   )}
                   {selectedBarber && (
                     <div className="flex items-center gap-2 text-sm">
-                      <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <User className="h-3.5 w-3.5 text-barber-red shrink-0" />
                       <span className="text-barber-text">{selectedBarber.full_name}</span>
                     </div>
                   )}
                   {selectedDate && watchedValues.reservation_time && (
                     <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <Calendar className="h-3.5 w-3.5 text-barber-red shrink-0" />
                       <span className="text-barber-text">
                         {format(selectedDate, "d MMM yyyy", { locale: es })} a las {watchedValues.reservation_time}
                       </span>
@@ -518,13 +635,13 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="text-barber-text text-sm font-medium flex items-center gap-2">
-                      <User className="h-4 w-4 text-primary" /> Nombre completo *
+                      <User className="h-4 w-4 text-barber-red" /> Nombre completo *
                     </label>
                     <Input
                       placeholder="Tu nombre completo"
                       {...register("client_name")}
                       className={cn(
-                        "bg-barber-card border-barber-border text-barber-text placeholder:text-barber-muted/50 focus:border-primary",
+                        "bg-barber-card border-barber-border text-barber-text placeholder:text-barber-muted/50 focus:border-barber-red",
                         errors.client_name && "border-destructive"
                       )}
                     />
@@ -533,13 +650,13 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
 
                   <div className="space-y-1.5">
                     <label className="text-barber-text text-sm font-medium flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-primary" /> WhatsApp / Teléfono *
+                      <Phone className="h-4 w-4 text-barber-red" /> WhatsApp / Teléfono *
                     </label>
                     <Input
                       placeholder="987 654 321"
                       {...register("client_phone")}
                       className={cn(
-                        "bg-barber-card border-barber-border text-barber-text placeholder:text-barber-muted/50 focus:border-primary",
+                        "bg-barber-card border-barber-border text-barber-text placeholder:text-barber-muted/50 focus:border-barber-red",
                         errors.client_phone && "border-destructive"
                       )}
                     />
@@ -548,13 +665,13 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
 
                   <div className="space-y-1.5">
                     <label className="text-barber-text text-sm font-medium flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-primary" /> Email (opcional)
+                      <Mail className="h-4 w-4 text-barber-red" /> Email (opcional)
                     </label>
                     <Input
                       type="email"
                       placeholder="tu@email.com"
                       {...register("client_email")}
-                      className="bg-barber-card border-barber-border text-barber-text placeholder:text-barber-muted/50 focus:border-primary"
+                      className="bg-barber-card border-barber-border text-barber-text placeholder:text-barber-muted/50 focus:border-barber-red"
                     />
                   </div>
                 </div>
@@ -586,7 +703,7 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
                 className={cn(
                   "px-6 rounded-xl font-semibold transition-all duration-300",
                   canProceed()
-                    ? "bg-gradient-to-r from-primary to-secondary text-white hover:shadow-[0_0_25px_hsl(358_77%_46%/0.3)]"
+                    ? "bg-gradient-to-r from-barber-red to-barber-orange text-white hover:shadow-[0_0_25px_hsl(358_77%_46%/0.3)]"
                     : "bg-barber-border text-barber-muted cursor-not-allowed"
                 )}
               >
@@ -597,7 +714,7 @@ export function ReservationModal({ open, onClose }: ReservationModalProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting || !canProceed()}
-                className="px-6 rounded-xl font-semibold bg-gradient-to-r from-primary to-secondary text-white hover:shadow-[0_0_30px_hsl(358_77%_46%/0.3)] transition-all duration-300"
+                className="px-6 rounded-xl font-semibold bg-gradient-to-r from-barber-red to-barber-orange text-white hover:shadow-[0_0_30px_hsl(358_77%_46%/0.3)] transition-all duration-300"
               >
                 {isSubmitting ? (
                   <>Procesando...</>
