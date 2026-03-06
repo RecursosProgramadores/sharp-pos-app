@@ -4,6 +4,7 @@ import { RevenueChart30Days } from "@/components/dashboard/RevenueChart30Days";
 import { ServicesBarChart } from "@/components/dashboard/ServicesBarChart";
 import { PaymentDonutChart } from "@/components/dashboard/PaymentDonutChart";
 import { BarberRanking } from "@/components/dashboard/BarberRanking";
+import { TodayAppointments } from "@/components/dashboard/TodayAppointments";
 import { AlertsTimeline } from "@/components/dashboard/AlertsTimeline";
 import { BarberSchedule } from "@/components/dashboard/BarberSchedule";
 import { Button } from "@/components/ui/button";
@@ -48,11 +49,14 @@ export default function Dashboard() {
         <BarberRanking />
       </div>
 
-      {/* Bottom Row */}
+      {/* Today's Appointments + Alerts */}
       <div className="grid gap-6 lg:grid-cols-2">
+        <TodayAppointments />
         <AlertsTimeline />
-        <BarberSchedule />
       </div>
+
+      {/* Barber Schedule */}
+      <BarberSchedule />
     </div>
   );
 }
