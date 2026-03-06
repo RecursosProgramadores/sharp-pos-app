@@ -49,10 +49,10 @@ export function TrustSection() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           {[
-            { value: 1000, suffix: "+", label: "Clientes satisfechos", icon: Star },
-            { value: 5, suffix: " años", label: "De excelencia", icon: Clock },
-            { value: 2, suffix: "", label: "Sucursales", icon: MapPin },
-            { value: 15000, suffix: "+", label: "Cortes realizados", icon: null },
+            { value: 1000, suffix: "+", label: "Clientes satisfechos" },
+            { value: 10, suffix: "+ años", label: "De excelencia" },
+            { value: 2, suffix: "", label: "Sucursales" },
+            { value: 15000, suffix: "+", label: "Cortes realizados" },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <AnimatedCounter target={stat.value} suffix={stat.suffix} />
@@ -65,7 +65,7 @@ export function TrustSection() {
           <div className="glass-card inline-flex items-center gap-2 px-4 py-2">
             <div className="flex gap-0.5">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-3.5 w-3.5 fill-gold text-gold" />
+                <Star key={i} className="h-3.5 w-3.5 fill-barber-orange text-barber-orange" />
               ))}
             </div>
             <span className="text-white/50 text-sm">4.9/5 promedio</span>
