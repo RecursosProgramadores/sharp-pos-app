@@ -25,6 +25,7 @@ export default function LandingPage() {
       <LandingHero onReserveClick={openReservation} />
       <TrustSection />
       <EssenceSection />
+      <ObjectivesSection />
       <LandingServices onReserveClick={openReservation} />
       <LandingTeam />
       <LandingGallery />
