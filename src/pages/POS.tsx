@@ -47,7 +47,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { sendSaleReceipt } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/security";
-import { sendSaleReceipt } from "@/lib/whatsapp";
 
 interface CartItemType {
   id: string;
