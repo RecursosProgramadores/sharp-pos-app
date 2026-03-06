@@ -1,4 +1,5 @@
 import { Calendar, Scissors } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import { RevenueChart30Days } from "@/components/dashboard/RevenueChart30Days";
 import { ServicesBarChart } from "@/components/dashboard/ServicesBarChart";
@@ -11,6 +12,8 @@ import { WeeklyReportCard } from "@/components/dashboard/WeeklyReportCard";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -24,11 +27,11 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => navigate("/admin/reservas")}>
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Hoy</span>
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => navigate("/admin/pos")}>
             <Scissors className="h-4 w-4" />
             Nueva Venta
           </Button>
