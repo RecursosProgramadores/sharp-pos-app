@@ -563,6 +563,16 @@ export function ReservationModal({ open, onClose, preSelectedServiceId }: Reserv
                         disabled={(date) => date < new Date()}
                         initialFocus
                         className={cn("p-3 pointer-events-auto")}
+                        classNames={{
+                          caption_label: "text-sm font-medium text-barber-text",
+                          nav_button: "h-7 w-7 bg-transparent p-0 text-barber-muted hover:text-barber-text hover:bg-barber-border border border-barber-border rounded-md inline-flex items-center justify-center",
+                          head_cell: "text-barber-muted rounded-md w-9 font-normal text-[0.8rem]",
+                          day: "h-9 w-9 p-0 font-normal text-barber-text hover:bg-barber-border hover:text-barber-text rounded-md inline-flex items-center justify-center",
+                          day_selected: "bg-barber-red text-white hover:bg-barber-red hover:text-white focus:bg-barber-red focus:text-white",
+                          day_today: "bg-barber-border text-barber-text font-semibold",
+                          day_outside: "text-barber-muted/40",
+                          day_disabled: "text-barber-muted/30",
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
