@@ -232,11 +232,19 @@ export default function Auth() {
                   </Button>
                 </div>
               </div>
+              {isLockedOut && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <p className="text-sm text-destructive">
+                    Cuenta bloqueada temporalmente. Espera {lockoutRemaining}s
+                  </p>
+                </div>
+              )}
               <Button 
                 type="submit" 
                 className="w-full h-11 text-base font-medium" 
                 size="lg" 
-                disabled={isLoading || !selectedRole}
+                disabled={isLoading || !selectedRole || !!isLockedOut}
               >
                 {isLoading ? (
                   <>

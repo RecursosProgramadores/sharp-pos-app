@@ -123,7 +123,7 @@ export async function logActivity(params: {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from('activity_logs').insert({
+    await (supabase.from('activity_logs') as any).insert({
       user_id: user.id,
       action: params.action,
       entity_type: params.entityType,
