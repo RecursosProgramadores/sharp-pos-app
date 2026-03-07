@@ -771,7 +771,7 @@ export default function POS() {
       </div>
 
       {/* Right Panel - Cart */}
-      <div className="w-[340px] shrink-0 flex flex-col card-elevated p-3 lg:p-4">
+      <div className="w-[380px] shrink-0 flex flex-col card-elevated p-3 lg:p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-primary" />
