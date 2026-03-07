@@ -37,8 +37,24 @@ const defaultPrinting = {
   },
 };
 
+const defaultBusinessInfo = {
+  name: "Tayta BarberShop",
+  tagline: "",
+  taxId: "",
+  address: "",
+  phone: "",
+  email: "",
+  website: "",
+  facebook: "",
+  instagram: "",
+  tiktok: "",
+  mapUrl: "",
+  logoUrl: "",
+};
+
 export default function PrintingTab() {
   const { data: saved, isLoading, save, isSaving } = useSettings("printing", defaultPrinting);
+  const { data: businessInfo } = useSettings("business_info", defaultBusinessInfo);
   const [config, setConfig] = useState(defaultPrinting);
 
   useEffect(() => {
@@ -52,6 +68,12 @@ export default function PrintingTab() {
   const handleSave = () => save(config);
 
   if (isLoading) return <div className="space-y-6">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const timeStr = now.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+  const bInfo = (businessInfo || defaultBusinessInfo) as typeof defaultBusinessInfo;
+  const receiptWidth = config.printerType === "thermal58" ? "220px" : config.printerType === "thermal80" ? "300px" : "100%";
 
   return (
     <div className="space-y-6">
@@ -94,7 +116,7 @@ export default function PrintingTab() {
         </CardContent>
       </Card>
 
-      {/* Receipt Customization */}
+      {/* Receipt Customization + Preview */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="card-elevated">
           <CardHeader><CardTitle className="font-display text-xl flex items-center gap-2"><FileText className="h-5 w-5 text-primary" />Personalización de Recibo</CardTitle></CardHeader>
@@ -103,10 +125,15 @@ export default function PrintingTab() {
               <div><p className="font-medium">Incluir Logo en Recibo</p><p className="text-sm text-muted-foreground">Muestra el logo en el encabezado</p></div>
               <Switch checked={config.receipt.includeLogo} onCheckedChange={(v) => setConfig(prev => ({ ...prev, receipt: { ...prev.receipt, includeLogo: v } }))} />
             </div>
+            {config.receipt.includeLogo && !bInfo.logoUrl && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-lg">
+                ⚠ No has subido un logo. Ve a "Información del Negocio" para subir uno.
+              </p>
+            )}
             <Separator />
             <div className="space-y-2">
               <Label>Texto de Encabezado</Label>
-              <Textarea value={config.receipt.headerText} onChange={(e) => setConfig(prev => ({ ...prev, receipt: { ...prev.receipt, headerText: e.target.value } }))} rows={4} />
+              <Textarea value={config.receipt.headerText} onChange={(e) => setConfig(prev => ({ ...prev, receipt: { ...prev.receipt, headerText: e.target.value } }))} rows={3} />
             </div>
             <div className="space-y-2">
               <Label>Texto de Pie de Página</Label>
@@ -121,6 +148,9 @@ export default function PrintingTab() {
               <div className="space-y-2">
                 <Label>URL del Código QR</Label>
                 <Input value={config.receipt.qrUrl} onChange={(e) => setConfig(prev => ({ ...prev, receipt: { ...prev.receipt, qrUrl: e.target.value } }))} placeholder="https://g.page/tu-negocio/review" />
+                {config.receipt.qrUrl && (
+                  <p className="text-xs text-green-600 dark:text-green-400">✓ Se generará el QR con esta URL</p>
+                )}
               </div>
             )}
             <Separator />
@@ -142,32 +172,138 @@ export default function PrintingTab() {
           </CardContent>
         </Card>
 
-        {/* Receipt Preview */}
+        {/* Professional Receipt Preview */}
         <Card className="card-elevated">
           <CardHeader><CardTitle className="font-display text-xl">Vista Previa del Recibo</CardTitle></CardHeader>
-          <CardContent>
-            <div className="border rounded-lg p-4 bg-card font-mono text-xs mx-auto" style={{ maxWidth: config.printerType === "thermal58" ? "200px" : config.printerType === "thermal80" ? "280px" : "100%" }}>
+          <CardContent className="flex justify-center">
+            <div
+              className="bg-white text-black rounded-lg shadow-lg border border-gray-200 p-5 font-mono"
+              style={{ width: receiptWidth, maxWidth: "100%" }}
+            >
+              {/* Logo & Header */}
               {config.receipt.includeLogo && (
-                <div className="text-center mb-2"><div className="w-12 h-12 bg-muted rounded-lg mx-auto mb-2 flex items-center justify-center"><span className="text-lg">✂️</span></div></div>
-              )}
-              <div className="text-center whitespace-pre-line text-[10px] mb-3">{config.receipt.headerText}</div>
-              <Separator className="my-2" />
-              <div className="text-center text-[10px] text-muted-foreground mb-2">BOLETA DE VENTA<br />{config.vouchers.boletaPrefix}-{String(config.vouchers.currentBoletaNumber).padStart(7, "0")}</div>
-              <Separator className="my-2" />
-              <div className="space-y-1 text-[10px]">
-                <div className="flex justify-between"><span>1 Corte + Barba</span><span>S/ 25.00</span></div>
-                <div className="flex justify-between"><span>1 Pomada Premium</span><span>S/ 18.00</span></div>
-              </div>
-              <Separator className="my-2" />
-              <div className="flex justify-between font-bold"><span>TOTAL:</span><span>S/ 43.00</span></div>
-              <Separator className="my-2" />
-              <div className="text-center whitespace-pre-line text-[10px]">{config.receipt.footerText}</div>
-              {config.receipt.includeQR && (
-                <div className="text-center mt-3">
-                  <div className="w-16 h-16 bg-muted mx-auto flex items-center justify-center rounded"><QrCode className="h-10 w-10 text-muted-foreground" /></div>
-                  <p className="text-[8px] text-muted-foreground mt-1">Escanea para dejarnos una reseña</p>
+                <div className="text-center mb-3">
+                  {bInfo.logoUrl ? (
+                    <img src={bInfo.logoUrl} alt="Logo" className="h-14 w-14 object-contain mx-auto mb-1 rounded" />
+                  ) : (
+                    <div className="w-14 h-14 bg-gray-100 rounded-lg mx-auto mb-1 flex items-center justify-center">
+                      <span className="text-2xl">✂️</span>
+                    </div>
+                  )}
                 </div>
               )}
+
+              <div className="text-center mb-3">
+                <p className="font-bold text-sm tracking-wide">{config.receipt.headerText || bInfo.name}</p>
+                {config.receipt.includeFiscalData && bInfo.address && (
+                  <p className="text-[9px] text-gray-500 mt-0.5">{bInfo.address}</p>
+                )}
+                {config.receipt.includeFiscalData && bInfo.taxId && (
+                  <p className="text-[9px] text-gray-500">RUC: {bInfo.taxId}</p>
+                )}
+                {bInfo.phone && (
+                  <p className="text-[9px] text-gray-500">Tel: {bInfo.phone}</p>
+                )}
+              </div>
+
+              <div className="border-t border-dashed border-gray-300 my-2" />
+
+              {/* Ticket Info */}
+              <div className="text-center mb-1">
+                <p className="text-[9px] font-semibold text-gray-600 uppercase tracking-wider">Boleta de Venta</p>
+                <p className="text-[10px] font-bold">{config.vouchers.boletaPrefix}-{String(config.vouchers.currentBoletaNumber).padStart(7, "0")}</p>
+              </div>
+
+              <div className="flex justify-between text-[9px] text-gray-500">
+                <span>Fecha: {dateStr}</span>
+                <span>{timeStr}</span>
+              </div>
+              <div className="text-[9px] text-gray-500 mb-1">
+                <div className="flex justify-between"><span>Cliente:</span><span>Juan Pérez</span></div>
+                <div className="flex justify-between"><span>Barbero:</span><span>Carlos M.</span></div>
+              </div>
+
+              <div className="border-t border-dashed border-gray-300 my-2" />
+
+              {/* Items */}
+              <div className="space-y-1 text-[10px]">
+                <div className="flex justify-between text-[8px] font-semibold text-gray-400 uppercase">
+                  <span>Descripción</span>
+                  <span>Importe</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>1× Corte + Barba</span>
+                  <span>S/ 25.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>1× Pomada Premium</span>
+                  <span>S/ 18.00</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-gray-300 my-2" />
+
+              {/* Totals */}
+              <div className="space-y-0.5 text-[10px]">
+                <div className="flex justify-between"><span>Subtotal:</span><span>S/ 43.00</span></div>
+                <div className="flex justify-between text-gray-400"><span>Descuento:</span><span>S/ 0.00</span></div>
+              </div>
+
+              <div className="border-t border-gray-300 my-1.5" />
+
+              <div className="flex justify-between font-bold text-sm">
+                <span>TOTAL:</span>
+                <span>S/ 43.00</span>
+              </div>
+
+              <div className="border-t border-dashed border-gray-300 my-2" />
+
+              <div className="flex justify-between text-[10px]">
+                <span>Pago:</span>
+                <span className="font-semibold">EFECTIVO</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span>Recibido:</span>
+                <span>S/ 50.00</span>
+              </div>
+              <div className="flex justify-between text-[10px] font-bold">
+                <span>Cambio:</span>
+                <span>S/ 7.00</span>
+              </div>
+
+              <div className="border-t border-dashed border-gray-300 my-2" />
+
+              {/* Footer */}
+              <div className="text-center text-[10px] text-gray-500 whitespace-pre-line">
+                {config.receipt.footerText}
+              </div>
+
+              {/* QR Code */}
+              {config.receipt.includeQR && (
+                <div className="text-center mt-3">
+                  {config.receipt.qrUrl ? (
+                    <>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(config.receipt.qrUrl)}`}
+                        alt="QR Code"
+                        className="w-16 h-16 mx-auto"
+                      />
+                      <p className="text-[8px] text-gray-400 mt-1">Escanea para dejarnos una reseña</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 bg-gray-100 mx-auto flex items-center justify-center rounded border border-gray-200">
+                        <QrCode className="h-10 w-10 text-gray-300" />
+                      </div>
+                      <p className="text-[8px] text-gray-400 mt-1">Configura una URL para generar el QR</p>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="text-center text-[8px] text-gray-300 mt-3">
+                {dateStr} {timeStr}
+              </div>
             </div>
           </CardContent>
         </Card>
