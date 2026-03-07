@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Search,
   Trash2,
@@ -18,6 +18,8 @@ import {
   CalendarCheck,
   Phone,
   ArrowRight,
+  X,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +75,8 @@ export default function POS() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
+  const [clientSearchTerm, setClientSearchTerm] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [serviceCategory, setServiceCategory] = useState("Todos");
   const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
   const [discountValue, setDiscountValue] = useState("");
@@ -533,6 +537,14 @@ export default function POS() {
     ? clients.find(c => c.id === selectedClient) 
     : null;
 
+  const filteredClients = useMemo(() => {
+    if (!clientSearchTerm) return clients.slice(0, 8);
+    const term = clientSearchTerm.toLowerCase();
+    return clients.filter(c => 
+      c.full_name.toLowerCase().includes(term) || c.phone.includes(term)
+    ).slice(0, 8);
+  }, [clients, clientSearchTerm]);
+
   return (
     <div className="h-[calc(100vh-4rem)] flex gap-3 p-1">
       {/* Left Panel - Catalog */}
@@ -772,73 +784,144 @@ export default function POS() {
 
       {/* Right Panel - Cart */}
       <div className="w-[380px] shrink-0 flex flex-col card-elevated p-3 lg:p-4">
-        <div className="flex items-center justify-between mb-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Venta Actual</h2>
-            <Badge variant="outline">{ticketNumber}</Badge>
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ShoppingCart className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display text-sm font-bold leading-tight">Venta Actual</h2>
+              <p className="text-[10px] text-muted-foreground">{ticketNumber}</p>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-destructive gap-1"
+            className="text-muted-foreground hover:text-destructive gap-1 h-7 text-xs"
             onClick={clearCart}
             disabled={cart.length === 0}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
             Limpiar
           </Button>
         </div>
 
-        {/* Client selection */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedClient} onValueChange={setSelectedClient}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Seleccionar cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="walk-in">Cliente General</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.full_name} — {client.phone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {/* Client info badge */}
-          {selectedClientData && (
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="text-[10px] gap-1">
-                <User className="h-3 w-3" />
-                {selectedClientData.level === "premium" ? "⭐ Premium" : 
-                 selectedClientData.level === "vip" ? "🌟 VIP" : 
-                 selectedClientData.level === "regular" ? "Regular" : "Nuevo"}
-              </Badge>
-              <Badge variant="secondary" className="text-[10px]">
-                {(selectedClientData as any).points || 0} pts
-              </Badge>
-              {activeReservationId && (
-                <Badge variant="default" className="text-[10px] gap-1 bg-success">
-                  <CalendarCheck className="h-3 w-3" />
-                  Desde reserva
-                </Badge>
+        {/* Client Search */}
+        <div className="mb-3 relative">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Cliente</label>
+          {selectedClientData ? (
+            <div className="flex items-center gap-2 p-2 rounded-xl border border-primary/30 bg-primary/5">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                {selectedClientData.level === "vip" ? (
+                  <Star className="h-4 w-4 text-primary fill-primary" />
+                ) : (
+                  <User className="h-4 w-4 text-primary" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-xs truncate">{selectedClientData.full_name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] text-muted-foreground">{selectedClientData.phone}</span>
+                  <Badge variant={
+                    selectedClientData.level === "vip" ? "default" :
+                    selectedClientData.level === "premium" ? "secondary" : "muted"
+                  } className="text-[9px] px-1 h-3.5">
+                    {selectedClientData.level === "vip" ? "🌟 VIP" :
+                     selectedClientData.level === "premium" ? "⭐ Premium" :
+                     selectedClientData.level === "regular" ? "Regular" : "Nuevo"}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground">{(selectedClientData as any).points || 0} pts</span>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-full hover:bg-destructive/10 hover:text-destructive shrink-0"
+                onClick={() => { setSelectedClient("walk-in"); setClientSearchTerm(""); }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cliente por nombre o teléfono..."
+                className="pl-8 h-8 text-xs rounded-lg"
+                value={clientSearchTerm}
+                onChange={(e) => {
+                  setClientSearchTerm(e.target.value);
+                  setShowClientDropdown(true);
+                }}
+                onFocus={() => setShowClientDropdown(true)}
+                onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+              />
+              {showClientDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg z-50 max-h-[200px] overflow-y-auto">
+                  <button
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-muted/50 transition-colors flex items-center gap-2 border-b border-border/30"
+                    onMouseDown={() => {
+                      setSelectedClient("walk-in");
+                      setClientSearchTerm("");
+                      setShowClientDropdown(false);
+                    }}
+                  >
+                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                      <User className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <span className="text-muted-foreground">Sin cliente / General</span>
+                  </button>
+                  {filteredClients.map((client) => (
+                    <button
+                      key={client.id}
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-primary/5 transition-colors flex items-center gap-2"
+                      onMouseDown={() => {
+                        setSelectedClient(client.id);
+                        setClientSearchTerm("");
+                        setShowClientDropdown(false);
+                      }}
+                    >
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User className="h-3 w-3 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{client.full_name}</p>
+                        <p className="text-[10px] text-muted-foreground">{client.phone}</p>
+                      </div>
+                      <Badge variant="muted" className="text-[9px] px-1 h-3.5 shrink-0">
+                        {(client as any).points || 0} pts
+                      </Badge>
+                    </button>
+                  ))}
+                  {filteredClients.length === 0 && clientSearchTerm && (
+                    <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                      No se encontraron clientes
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
+          {activeReservationId && (
+            <Badge variant="default" className="text-[9px] gap-1 bg-success mt-1.5">
+              <CalendarCheck className="h-3 w-3" />
+              Cargada desde reserva
+            </Badge>
+          )}
         </div>
 
-        <Separator className="my-2" />
+        <Separator className="mb-2" />
 
         {/* Cart items */}
-        <ScrollArea className="flex-1 my-4">
+        <ScrollArea className="flex-1 my-2">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
-              <Receipt className="h-16 w-16 mb-4 opacity-30" />
-              <p className="font-medium">Carrito vacío</p>
-              <p className="text-sm text-center mt-1">Selecciona servicios, productos o una cita</p>
+              <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                <Receipt className="h-8 w-8 opacity-30" />
+              </div>
+              <p className="font-semibold text-sm">Carrito vacío</p>
+              <p className="text-xs text-center mt-1 max-w-[200px]">Selecciona servicios, productos o carga una cita</p>
             </div>
           ) : (
             <div className="space-y-3">
