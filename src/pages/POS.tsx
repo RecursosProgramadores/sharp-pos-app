@@ -558,8 +558,8 @@ export default function POS() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden [&>div[role=tabpanel]]:flex-1 [&>div[role=tabpanel]]:min-h-0">
-          <TabsList className="grid w-full grid-cols-3 h-9 mb-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <TabsList className="grid w-full grid-cols-3 h-9 mb-1.5 shrink-0">
             <TabsTrigger value="services" className="h-7 text-xs gap-1.5">
               <Scissors className="h-3.5 w-3.5" />
               Servicios
@@ -579,8 +579,9 @@ export default function POS() {
             </TabsTrigger>
           </TabsList>
 
+          {/* SERVICES TAB */}
           <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-1.5 shrink-0">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -591,7 +592,7 @@ export default function POS() {
                 />
               </div>
             </div>
-            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide">
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 mb-1 scrollbar-hide shrink-0">
               {serviceCategories.map((cat) => (
                 <Button
                   key={cat}
@@ -606,33 +607,45 @@ export default function POS() {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-1.5 pb-2">
-                {filteredServices.map((service) => (
-                  <ServiceCard
-                    key={service.id}
-                    service={service}
-                    onClick={() => addService(service)}
-                  />
-                ))}
-              </div>
+              {filteredServices.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground">
+                  <Scissors className="h-16 w-16 mb-4 opacity-20" />
+                  <p className="font-semibold text-sm">No se encontraron servicios</p>
+                  <p className="text-xs mt-1">Intenta con otra búsqueda o categoría</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-2 pb-2 auto-rows-fr">
+                  {filteredServices.map((service) => (
+                    <ServiceCard
+                      key={service.id}
+                      service={service}
+                      onClick={() => addService(service)}
+                    />
+                  ))}
+                </div>
+              )}
             </ScrollArea>
           </TabsContent>
 
+          {/* PRODUCTS TAB */}
           <TabsContent value="products" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-1.5 shrink-0">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="search-input"
-                  placeholder="Buscar producto..."
+                  placeholder="Buscar producto o escanear código..."
                   className="pl-8 h-8 text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0">
+                <ScanBarcode className="h-3.5 w-3.5" />
+              </Button>
             </div>
 
-            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide">
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 mb-1 scrollbar-hide shrink-0">
               {productCategories.map((cat) => (
                 <Button
                   key={cat}
@@ -647,40 +660,50 @@ export default function POS() {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-1.5 pb-2">
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onClick={() => setQuantityProduct(product)}
-                  />
-                ))}
-                {filteredProducts.length === 0 && (
-                  <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
-                    No hay productos disponibles.
-                  </div>
-                )}
-              </div>
+              {filteredProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground">
+                  <Package2 className="h-16 w-16 mb-4 opacity-20" />
+                  <p className="font-semibold text-sm">No hay productos disponibles</p>
+                  <p className="text-xs mt-1">Agrega productos desde el módulo de inventario</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-2 pb-2 auto-rows-fr">
+                  {filteredProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onClick={() => setQuantityProduct(product)}
+                    />
+                  ))}
+                </div>
+              )}
             </ScrollArea>
           </TabsContent>
 
-          {/* Reservations Tab */}
+          {/* RESERVATIONS TAB */}
           <TabsContent value="reservations" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
-            <div className="mb-2">
-              <h3 className="font-display text-sm font-bold">Citas de Hoy</h3>
-              <p className="text-xs text-muted-foreground">
-                Selecciona una reserva para cargarla al carrito
-              </p>
+            <div className="flex items-center justify-between mb-1.5 shrink-0">
+              <div>
+                <h3 className="font-display text-sm font-bold">Citas de Hoy</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Toca una reserva para cargarla al carrito
+                </p>
+              </div>
+              {todayReservations.length > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {todayReservations.length} cita{todayReservations.length !== 1 ? "s" : ""}
+                </Badge>
+              )}
             </div>
             <ScrollArea className="flex-1">
               {todayReservations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <CalendarCheck className="h-12 w-12 mb-3 opacity-30" />
-                  <p className="font-medium text-sm">No hay citas pendientes hoy</p>
-                  <p className="text-xs mt-1">Las reservas de la web aparecerán aquí</p>
+                <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground">
+                  <CalendarCheck className="h-16 w-16 mb-4 opacity-20" />
+                  <p className="font-semibold text-sm">No hay citas pendientes hoy</p>
+                  <p className="text-xs mt-1">Las reservas de la web aparecerán aquí automáticamente</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 pb-2 auto-rows-fr">
                   {todayReservations.map((reservation) => {
                     const svc = reservation.service as any;
                     const barber = reservation.barber as any;
@@ -689,49 +712,50 @@ export default function POS() {
                       <button
                         key={reservation.id}
                         onClick={() => loadReservation(reservation)}
-                        className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
-                          isActive 
-                            ? "border-primary bg-primary/10 shadow-md" 
-                            : "border-border bg-card hover:border-primary/50 hover:shadow-sm"
-                        }`}
+                        className={cn(
+                          "group w-full text-left p-3 rounded-xl border transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5",
+                          isActive
+                            ? "border-primary bg-primary/10 shadow-md ring-1 ring-primary/30"
+                            : "border-border/40 bg-card hover:border-primary/50"
+                        )}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Clock className="h-5 w-5 text-primary" />
+                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Clock className="h-4 w-4 text-primary" />
                             </div>
                             <div>
-                              <p className="font-semibold">{reservation.client_name}</p>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Phone className="h-3 w-3" />
+                              <p className="font-semibold text-sm">{reservation.client_name}</p>
+                              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                <Phone className="h-2.5 w-2.5" />
                                 {reservation.client_phone}
                               </div>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-display text-lg font-bold text-primary">
+                            <p className="font-display text-base font-bold text-primary">
                               {reservation.reservation_time}
                             </p>
-                            <Badge variant={reservation.status === "confirmed" ? "default" : "secondary"} className="text-[10px]">
+                            <Badge variant={reservation.status === "confirmed" ? "default" : "secondary"} className="text-[9px]">
                               {reservation.status === "confirmed" ? "Confirmada" : "Pendiente"}
                             </Badge>
                           </div>
                         </div>
-                        <Separator className="my-2" />
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Scissors className="h-4 w-4 text-muted-foreground" />
-                            <span>{svc?.name || "Servicio"}</span>
-                            <span className="font-semibold text-primary">S/ {svc?.price || 0}</span>
+                        <Separator className="my-1.5" />
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Scissors className="h-3 w-3 text-muted-foreground" />
+                            <span className="truncate max-w-[100px]">{svc?.name || "Servicio"}</span>
+                            <span className="font-bold text-primary">S/ {svc?.price || 0}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <User className="h-4 w-4" />
-                            <span>{barber?.full_name || "Sin asignar"}</span>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <User className="h-3 w-3" />
+                            <span className="truncate max-w-[80px]">{barber?.full_name || "Sin asignar"}</span>
                           </div>
                         </div>
                         {isActive && (
-                          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-primary font-medium">
-                            <ArrowRight className="h-4 w-4" />
+                          <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-primary font-medium bg-primary/5 rounded-lg py-1">
+                            <ArrowRight className="h-3 w-3" />
                             Cargada en carrito
                           </div>
                         )}
