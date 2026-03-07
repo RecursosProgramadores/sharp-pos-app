@@ -71,6 +71,7 @@ export default function POS() {
   const [selectedClient, setSelectedClient] = useState("walk-in");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
+  const [serviceSearchTerm, setServiceSearchTerm] = useState("");
   const [serviceCategory, setServiceCategory] = useState("Todos");
   const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
   const [discountValue, setDiscountValue] = useState("");
@@ -177,9 +178,11 @@ export default function POS() {
   // Product categories
   const productCategories = ["Todos", ...new Set(products.map((p) => p.category))];
 
-  const filteredServices = serviceCategory === "Todos"
-    ? services
-    : services.filter((s) => s.category === serviceCategory);
+  const filteredServices = services.filter((s) => {
+    const matchesCategory = serviceCategory === "Todos" || s.category === serviceCategory;
+    const matchesSearch = serviceSearchTerm === "" || s.name.toLowerCase().includes(serviceSearchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -555,7 +558,7 @@ export default function POS() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden [&>div[role=tabpanel]]:flex-1 [&>div[role=tabpanel]]:min-h-0">
           <TabsList className="grid w-full grid-cols-3 h-9 mb-2">
             <TabsTrigger value="services" className="h-7 text-xs gap-1.5">
               <Scissors className="h-3.5 w-3.5" />
@@ -576,7 +579,18 @@ export default function POS() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden">
+          <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
+            <div className="flex gap-2 mb-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar servicio..."
+                  className="pl-8 h-8 text-sm"
+                  value={serviceSearchTerm}
+                  onChange={(e) => setServiceSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide">
               {serviceCategories.map((cat) => (
                 <Button
@@ -604,7 +618,7 @@ export default function POS() {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="products" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden">
+          <TabsContent value="products" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
             <div className="flex gap-2 mb-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -651,7 +665,7 @@ export default function POS() {
           </TabsContent>
 
           {/* Reservations Tab */}
-          <TabsContent value="reservations" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden">
+          <TabsContent value="reservations" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
             <div className="mb-2">
               <h3 className="font-display text-sm font-bold">Citas de Hoy</h3>
               <p className="text-xs text-muted-foreground">
