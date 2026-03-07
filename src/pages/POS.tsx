@@ -44,6 +44,7 @@ import { SavedSalesModal } from "@/components/pos/SavedSalesModal";
 import { CartItem } from "@/components/pos/CartItem";
 import { ThermalReceipt } from "@/components/pos/ThermalReceipt";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { sendSaleReceipt } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/security";
