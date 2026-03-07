@@ -69,6 +69,7 @@ interface SystemUser {
   role: "admin" | "cajero";
   created_at: string;
   full_name: string;
+  is_current_user: boolean;
 }
 
 const roles = [
