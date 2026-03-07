@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Store, Upload, Globe, MapPin, Phone, Mail, Link as LinkIcon,
-  Facebook, Instagram, Save, Loader2,
+  Facebook, Instagram, Save, Loader2, Trash2, ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSettings } from "@/hooks/useSettings";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const daysOfWeek = [
   { id: "monday", name: "Lunes" },
@@ -36,6 +38,7 @@ const defaultBusinessInfo = {
   instagram: "",
   tiktok: "",
   mapUrl: "",
+  logoUrl: "",
 };
 
 const defaultSchedule: Record<string, { open: string; close: string; closed: boolean }> = {
@@ -56,7 +59,7 @@ export default function BusinessInfoTab() {
 
   const [businessInfo, setBusinessInfo] = useState(defaultBusinessInfo);
   const [schedule, setSchedule] = useState(defaultSchedule);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (savedInfo) setBusinessInfo({ ...defaultBusinessInfo, ...savedInfo });
@@ -66,13 +69,54 @@ export default function BusinessInfoTab() {
     if (savedSchedule) setSchedule({ ...defaultSchedule, ...savedSchedule });
   }, [savedSchedule]);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setLogoPreview(reader.result as string);
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Archivo muy grande", description: "El logo debe ser menor a 2MB", variant: "destructive" });
+      return;
     }
+
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      toast({ title: "Formato no válido", description: "Solo se aceptan PNG, JPG o WebP", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const fileName = `logo_${Date.now()}.${ext}`;
+
+      // Delete old logo if exists
+      if (businessInfo.logoUrl) {
+        const oldPath = businessInfo.logoUrl.split('/business/')[1];
+        if (oldPath) {
+          await supabase.storage.from('business').remove([oldPath]);
+        }
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('business')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('business')
+        .getPublicUrl(fileName);
+
+      setBusinessInfo(prev => ({ ...prev, logoUrl: publicUrl }));
+      toast({ title: "Logo subido", description: "El logo se ha subido correctamente. Guarda los cambios." });
+    } catch (err: any) {
+      toast({ title: "Error al subir logo", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setBusinessInfo(prev => ({ ...prev, logoUrl: "" }));
   };
 
   const handleScheduleChange = (dayId: string, field: "open" | "close" | "closed", value: string | boolean) => {
@@ -115,19 +159,36 @@ export default function BusinessInfoTab() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-6">
-            <div className="h-24 w-24 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted">
-              {logoPreview ? (
-                <img src={logoPreview} alt="Logo preview" className="h-full w-full object-cover" />
+            <div className="h-24 w-24 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted shrink-0">
+              {businessInfo.logoUrl ? (
+                <img src={businessInfo.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
               ) : (
-                <Upload className="h-8 w-8 text-muted-foreground" />
+                <ImageIcon className="h-8 w-8 text-muted-foreground" />
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="logo-upload" className="cursor-pointer">
-                <Button variant="outline" asChild><span><Upload className="h-4 w-4 mr-2" />Subir Logo</span></Button>
-              </Label>
-              <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-              <p className="text-xs text-muted-foreground">PNG, JPG hasta 2MB. Recomendado: 200x200px</p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="logo-upload" className="cursor-pointer">
+                  <Button variant="outline" asChild disabled={uploading}>
+                    <span>
+                      {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                      {uploading ? "Subiendo..." : "Subir Logo"}
+                    </span>
+                  </Button>
+                </Label>
+                {businessInfo.logoUrl && (
+                  <Button variant="ghost" size="icon" onClick={handleRemoveLogo} className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <input id="logo-upload" type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
+              <p className="text-xs text-muted-foreground">PNG, JPG o WebP hasta 2MB. Recomendado: 200×200px</p>
+              {businessInfo.logoUrl && (
+                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                  ✓ Logo guardado en el servidor
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
