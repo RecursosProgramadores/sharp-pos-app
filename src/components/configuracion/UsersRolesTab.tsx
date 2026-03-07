@@ -477,11 +477,11 @@ export default function UsersRolesTab() {
                   </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow key={user.id} className={user.is_current_user ? "bg-primary/5" : ""}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback className="bg-primary/10 text-primary">
+                          <Avatar className={user.role === "admin" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}>
+                            <AvatarFallback className={user.role === "admin" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}>
                               {user.full_name
                                 .split(" ")
                                 .map((n) => n[0])
@@ -491,14 +491,14 @@ export default function UsersRolesTab() {
                           </Avatar>
                           <div>
                             <p className="font-medium">{user.full_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              ID: {user.id.slice(0, 8)}...
-                            </p>
+                            {user.is_current_user && (
+                              <span className="text-xs text-primary font-medium">Tú</span>
+                            )}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString("es-MX", {
                           day: "2-digit",
                           month: "short",
@@ -506,34 +506,36 @@ export default function UsersRolesTab() {
                         })}
                       </TableCell>
                       <TableCell className="text-right">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. El usuario "{user.full_name}" perderá acceso al sistema.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        {user.role !== "admin" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. El usuario "{user.full_name}" perderá acceso al sistema.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
