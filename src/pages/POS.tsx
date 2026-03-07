@@ -556,18 +556,18 @@ export default function POS() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-3 h-14 mb-4">
-            <TabsTrigger value="services" className="h-12 text-base gap-2">
-              <Scissors className="h-5 w-5" />
-              SERVICIOS
+          <TabsList className="grid w-full grid-cols-3 h-11 mb-3">
+            <TabsTrigger value="services" className="h-9 text-sm gap-1.5">
+              <Scissors className="h-4 w-4" />
+              Servicios
             </TabsTrigger>
-            <TabsTrigger value="products" className="h-12 text-base gap-2">
-              <Package2 className="h-5 w-5" />
-              PRODUCTOS
+            <TabsTrigger value="products" className="h-9 text-sm gap-1.5">
+              <Package2 className="h-4 w-4" />
+              Productos
             </TabsTrigger>
-            <TabsTrigger value="reservations" className="h-12 text-base gap-2 relative">
-              <CalendarCheck className="h-5 w-5" />
-              CITAS
+            <TabsTrigger value="reservations" className="h-9 text-sm gap-1.5 relative">
+              <CalendarCheck className="h-4 w-4" />
+              Citas
               {todayReservations.length > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-success">
                   {todayReservations.length}
