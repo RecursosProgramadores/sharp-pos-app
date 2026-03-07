@@ -546,24 +546,25 @@ export default function POS() {
   }, [clients, clientSearchTerm]);
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex gap-3 p-1">
+    <div className="h-[calc(100vh-4rem)] flex gap-2 p-1 overflow-hidden">
       {/* Left Panel - Catalog */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex items-center justify-between gap-2 mb-1.5">
+        {/* Compact Header */}
+        <div className="flex items-center justify-between gap-2 mb-1 shrink-0">
           <div className="min-w-0">
-            <h1 className="font-display text-lg tracking-tight leading-tight">Punto de Venta</h1>
-            <p className="text-muted-foreground text-[11px]">Ticket: {ticketNumber}</p>
+            <h1 className="font-display text-base tracking-tight leading-none">Punto de Venta</h1>
+            <p className="text-muted-foreground text-[10px] leading-tight">{ticketNumber}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowDailySales(true)}>
-              <ListOrdered className="h-4 w-4" />
-              <span className="hidden sm:inline">Ventas del Día</span>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="sm" className="gap-1.5 h-7 text-[11px] px-2" onClick={() => setShowDailySales(true)}>
+              <ListOrdered className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Ventas</span>
             </Button>
-            <Button variant="outline" size="sm" className="gap-2 relative" onClick={() => setShowSavedSales(true)}>
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">Guardadas</span>
+            <Button variant="outline" size="sm" className="gap-1.5 h-7 text-[11px] px-2 relative" onClick={() => setShowSavedSales(true)}>
+              <Clock className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Guardadas</span>
               {savedSales.length > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[9px]">
                   {savedSales.length}
                 </Badge>
               )}
@@ -571,21 +572,22 @@ export default function POS() {
           </div>
         </div>
 
+        {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-3 h-9 mb-1.5 shrink-0">
-            <TabsTrigger value="services" className="h-7 text-xs gap-1.5">
-              <Scissors className="h-3.5 w-3.5" />
+          <TabsList className="grid w-full grid-cols-3 h-8 mb-1 shrink-0">
+            <TabsTrigger value="services" className="h-6 text-[11px] gap-1">
+              <Scissors className="h-3 w-3" />
               Servicios
             </TabsTrigger>
-            <TabsTrigger value="products" className="h-7 text-xs gap-1.5">
-              <Package2 className="h-3.5 w-3.5" />
+            <TabsTrigger value="products" className="h-6 text-[11px] gap-1">
+              <Package2 className="h-3 w-3" />
               Productos
             </TabsTrigger>
-            <TabsTrigger value="reservations" className="h-7 text-xs gap-1.5 relative">
-              <CalendarCheck className="h-3.5 w-3.5" />
+            <TabsTrigger value="reservations" className="h-6 text-[11px] gap-1 relative">
+              <CalendarCheck className="h-3 w-3" />
               Citas
               {todayReservations.length > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[9px] bg-success">
+                <Badge className="absolute -top-1 -right-1 h-3.5 w-3.5 p-0 flex items-center justify-center text-[8px] bg-success">
                   {todayReservations.length}
                 </Badge>
               )}
@@ -594,40 +596,39 @@ export default function POS() {
 
           {/* SERVICES TAB */}
           <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
-            <div className="flex gap-2 mb-1.5 shrink-0">
+            <div className="flex gap-1.5 mb-1 shrink-0">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Buscar servicio..."
-                  className="pl-8 h-8 text-sm"
+                  className="pl-7 h-7 text-xs"
                   value={serviceSearchTerm}
                   onChange={(e) => setServiceSearchTerm(e.target.value)}
                 />
               </div>
             </div>
-            <div className="flex gap-1.5 overflow-x-auto pb-1.5 mb-1 scrollbar-hide shrink-0">
+            <div className="flex gap-1 overflow-x-auto pb-1 mb-0.5 scrollbar-hide shrink-0">
               {serviceCategories.map((cat) => (
                 <Button
                   key={cat}
                   variant={serviceCategory === cat ? "default" : "outline"}
                   size="sm"
                   onClick={() => setServiceCategory(cat)}
-                  className="whitespace-nowrap h-7 text-[11px] px-2.5"
+                  className="whitespace-nowrap h-6 text-[10px] px-2"
                 >
                   {cat}
                 </Button>
               ))}
             </div>
 
-            <ScrollArea className="flex-1">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {filteredServices.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground">
-                  <Scissors className="h-16 w-16 mb-4 opacity-20" />
-                  <p className="font-semibold text-sm">No se encontraron servicios</p>
-                  <p className="text-xs mt-1">Intenta con otra búsqueda o categoría</p>
+                <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-muted-foreground">
+                  <Scissors className="h-12 w-12 mb-3 opacity-20" />
+                  <p className="font-semibold text-xs">No se encontraron servicios</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-2 pb-2 auto-rows-fr">
+                <div className="grid gap-1.5 pb-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))' }}>
                   {filteredServices.map((service) => (
                     <ServiceCard
                       key={service.id}
@@ -637,50 +638,49 @@ export default function POS() {
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* PRODUCTS TAB */}
           <TabsContent value="products" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
-            <div className="flex gap-2 mb-1.5 shrink-0">
+            <div className="flex gap-1.5 mb-1 shrink-0">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="search-input"
                   placeholder="Buscar producto o escanear código..."
-                  className="pl-8 h-8 text-sm"
+                  className="pl-7 h-7 text-xs"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0">
+              <Button variant="outline" size="sm" className="h-7 gap-1 shrink-0 px-2">
                 <ScanBarcode className="h-3.5 w-3.5" />
               </Button>
             </div>
 
-            <div className="flex gap-1.5 overflow-x-auto pb-1.5 mb-1 scrollbar-hide shrink-0">
+            <div className="flex gap-1 overflow-x-auto pb-1 mb-0.5 scrollbar-hide shrink-0">
               {productCategories.map((cat) => (
                 <Button
                   key={cat}
                   variant={selectedCategory === cat ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(cat)}
-                  className="whitespace-nowrap h-7 text-[11px] px-2.5"
+                  className="whitespace-nowrap h-6 text-[10px] px-2"
                 >
                   {cat}
                 </Button>
               ))}
             </div>
 
-            <ScrollArea className="flex-1">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {filteredProducts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground">
-                  <Package2 className="h-16 w-16 mb-4 opacity-20" />
-                  <p className="font-semibold text-sm">No hay productos disponibles</p>
-                  <p className="text-xs mt-1">Agrega productos desde el módulo de inventario</p>
+                <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-muted-foreground">
+                  <Package2 className="h-12 w-12 mb-3 opacity-20" />
+                  <p className="font-semibold text-xs">No hay productos disponibles</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-2 pb-2 auto-rows-fr">
+                <div className="grid gap-1.5 pb-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))' }}>
                   {filteredProducts.map((product) => (
                     <ProductCard
                       key={product.id}
@@ -690,33 +690,30 @@ export default function POS() {
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* RESERVATIONS TAB */}
           <TabsContent value="reservations" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden data-[state=inactive]:hidden">
-            <div className="flex items-center justify-between mb-1.5 shrink-0">
+            <div className="flex items-center justify-between mb-1 shrink-0">
               <div>
-                <h3 className="font-display text-sm font-bold">Citas de Hoy</h3>
-                <p className="text-[11px] text-muted-foreground">
-                  Toca una reserva para cargarla al carrito
-                </p>
+                <h3 className="font-display text-xs font-bold">Citas de Hoy</h3>
+                <p className="text-[10px] text-muted-foreground">Toca una reserva para cargarla</p>
               </div>
               {todayReservations.length > 0 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-[10px]">
                   {todayReservations.length} cita{todayReservations.length !== 1 ? "s" : ""}
                 </Badge>
               )}
             </div>
-            <ScrollArea className="flex-1">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {todayReservations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground">
-                  <CalendarCheck className="h-16 w-16 mb-4 opacity-20" />
-                  <p className="font-semibold text-sm">No hay citas pendientes hoy</p>
-                  <p className="text-xs mt-1">Las reservas de la web aparecerán aquí automáticamente</p>
+                <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-muted-foreground">
+                  <CalendarCheck className="h-12 w-12 mb-3 opacity-20" />
+                  <p className="font-semibold text-xs">No hay citas pendientes hoy</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 pb-2 auto-rows-fr">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-1.5 pb-1">
                   {todayReservations.map((reservation) => {
                     const svc = reservation.service as any;
                     const barber = reservation.barber as any;
@@ -726,50 +723,49 @@ export default function POS() {
                         key={reservation.id}
                         onClick={() => loadReservation(reservation)}
                         className={cn(
-                          "group w-full text-left p-3 rounded-xl border transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5",
+                          "group w-full text-left p-2.5 rounded-lg border transition-all duration-200 hover:shadow-md",
                           isActive
-                            ? "border-primary bg-primary/10 shadow-md ring-1 ring-primary/30"
+                            ? "border-primary bg-primary/10 ring-1 ring-primary/30"
                             : "border-border/40 bg-card hover:border-primary/50"
                         )}
                       >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <Clock className="h-4 w-4 text-primary" />
+                        <div className="flex items-start justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                              <Clock className="h-3.5 w-3.5 text-primary" />
                             </div>
                             <div>
-                              <p className="font-semibold text-sm">{reservation.client_name}</p>
-                              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <p className="font-semibold text-xs leading-tight">{reservation.client_name}</p>
+                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                 <Phone className="h-2.5 w-2.5" />
                                 {reservation.client_phone}
                               </div>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-display text-base font-bold text-primary">
+                            <p className="font-display text-sm font-bold text-primary leading-tight">
                               {reservation.reservation_time}
                             </p>
-                            <Badge variant={reservation.status === "confirmed" ? "default" : "secondary"} className="text-[9px]">
+                            <Badge variant={reservation.status === "confirmed" ? "default" : "secondary"} className="text-[8px] h-3.5">
                               {reservation.status === "confirmed" ? "Confirmada" : "Pendiente"}
                             </Badge>
                           </div>
                         </div>
-                        <Separator className="my-1.5" />
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1.5">
-                            <Scissors className="h-3 w-3 text-muted-foreground" />
-                            <span className="truncate max-w-[100px]">{svc?.name || "Servicio"}</span>
+                        <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-border/30">
+                          <div className="flex items-center gap-1">
+                            <Scissors className="h-2.5 w-2.5 text-muted-foreground" />
+                            <span className="truncate max-w-[80px]">{svc?.name || "Servicio"}</span>
                             <span className="font-bold text-primary">S/ {svc?.price || 0}</span>
                           </div>
                           <div className="flex items-center gap-1 text-muted-foreground">
-                            <User className="h-3 w-3" />
-                            <span className="truncate max-w-[80px]">{barber?.full_name || "Sin asignar"}</span>
+                            <User className="h-2.5 w-2.5" />
+                            <span className="truncate max-w-[60px]">{barber?.full_name || "—"}</span>
                           </div>
                         </div>
                         {isActive && (
-                          <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-primary font-medium bg-primary/5 rounded-lg py-1">
-                            <ArrowRight className="h-3 w-3" />
-                            Cargada en carrito
+                          <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-primary font-medium bg-primary/5 rounded py-0.5">
+                            <ArrowRight className="h-2.5 w-2.5" />
+                            En carrito
                           </div>
                         )}
                       </button>
@@ -777,78 +773,76 @@ export default function POS() {
                   })}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Right Panel - Cart */}
-      <div className="w-[380px] shrink-0 flex flex-col card-elevated p-3 lg:p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
+      {/* Right Panel - Cart (fixed width, full height flex column) */}
+      <div className="w-[340px] shrink-0 flex flex-col card-elevated overflow-hidden">
+        {/* Cart Header - sticky top */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ShoppingCart className="h-4 w-4 text-primary" />
+            <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+              <ShoppingCart className="h-3.5 w-3.5 text-primary" />
             </div>
             <div>
-              <h2 className="font-display text-sm font-bold leading-tight">Venta Actual</h2>
-              <p className="text-[10px] text-muted-foreground">{ticketNumber}</p>
+              <h2 className="font-display text-xs font-bold leading-none">Venta Actual</h2>
+              <p className="text-[9px] text-muted-foreground">{ticketNumber}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-destructive gap-1 h-7 text-xs"
+            className="text-muted-foreground hover:text-destructive gap-1 h-6 text-[10px] px-1.5"
             onClick={clearCart}
             disabled={cart.length === 0}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3 w-3" />
             Limpiar
           </Button>
         </div>
 
-        {/* Client Search */}
-        <div className="mb-3 relative">
-          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Cliente</label>
+        {/* Client Search - compact */}
+        <div className="px-3 py-2 border-b border-border/40 shrink-0 relative">
+          <label className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5 block">Cliente</label>
           {selectedClientData ? (
-            <div className="flex items-center gap-2 p-2 rounded-xl border border-primary/30 bg-primary/5">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2 p-1.5 rounded-lg border border-primary/30 bg-primary/5">
+              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 {selectedClientData.level === "vip" ? (
-                  <Star className="h-4 w-4 text-primary fill-primary" />
+                  <Star className="h-3 w-3 text-primary fill-primary" />
                 ) : (
-                  <User className="h-4 w-4 text-primary" />
+                  <User className="h-3 w-3 text-primary" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-xs truncate">{selectedClientData.full_name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-muted-foreground">{selectedClientData.phone}</span>
+                <p className="font-semibold text-[11px] truncate leading-tight">{selectedClientData.full_name}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] text-muted-foreground">{selectedClientData.phone}</span>
                   <Badge variant={
                     selectedClientData.level === "vip" ? "default" :
                     selectedClientData.level === "premium" ? "secondary" : "muted"
-                  } className="text-[9px] px-1 h-3.5">
-                    {selectedClientData.level === "vip" ? "🌟 VIP" :
-                     selectedClientData.level === "premium" ? "⭐ Premium" :
-                     selectedClientData.level === "regular" ? "Regular" : "Nuevo"}
+                  } className="text-[8px] px-1 h-3">
+                    {selectedClientData.level === "vip" ? "VIP" :
+                     selectedClientData.level === "premium" ? "Premium" : "Regular"}
                   </Badge>
-                  <span className="text-[10px] text-muted-foreground">{(selectedClientData as any).points || 0} pts</span>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 rounded-full hover:bg-destructive/10 hover:text-destructive shrink-0"
+                className="h-5 w-5 rounded-full hover:bg-destructive/10 hover:text-destructive shrink-0"
                 onClick={() => { setSelectedClient("walk-in"); setClientSearchTerm(""); }}
               >
-                <X className="h-3 w-3" />
+                <X className="h-2.5 w-2.5" />
               </Button>
             </div>
           ) : (
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
               <Input
-                placeholder="Buscar cliente por nombre o teléfono..."
-                className="pl-8 h-8 text-xs rounded-lg"
+                placeholder="Buscar cliente..."
+                className="pl-7 h-7 text-[11px] rounded-md"
                 value={clientSearchTerm}
                 onChange={(e) => {
                   setClientSearchTerm(e.target.value);
@@ -858,44 +852,44 @@ export default function POS() {
                 onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
               />
               {showClientDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg z-50 max-h-[200px] overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-[180px] overflow-y-auto">
                   <button
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-muted/50 transition-colors flex items-center gap-2 border-b border-border/30"
+                    className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-muted/50 transition-colors flex items-center gap-2 border-b border-border/30"
                     onMouseDown={() => {
                       setSelectedClient("walk-in");
                       setClientSearchTerm("");
                       setShowClientDropdown(false);
                     }}
                   >
-                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                      <User className="h-3 w-3 text-muted-foreground" />
+                    <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+                      <User className="h-2.5 w-2.5 text-muted-foreground" />
                     </div>
                     <span className="text-muted-foreground">Sin cliente / General</span>
                   </button>
                   {filteredClients.map((client) => (
                     <button
                       key={client.id}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-primary/5 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-primary/5 transition-colors flex items-center gap-2"
                       onMouseDown={() => {
                         setSelectedClient(client.id);
                         setClientSearchTerm("");
                         setShowClientDropdown(false);
                       }}
                     >
-                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <User className="h-3 w-3 text-primary" />
+                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User className="h-2.5 w-2.5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{client.full_name}</p>
-                        <p className="text-[10px] text-muted-foreground">{client.phone}</p>
+                        <p className="font-medium truncate leading-tight">{client.full_name}</p>
+                        <p className="text-[9px] text-muted-foreground">{client.phone}</p>
                       </div>
-                      <Badge variant="muted" className="text-[9px] px-1 h-3.5 shrink-0">
+                      <Badge variant="muted" className="text-[8px] px-1 h-3 shrink-0">
                         {(client as any).points || 0} pts
                       </Badge>
                     </button>
                   ))}
                   {filteredClients.length === 0 && clientSearchTerm && (
-                    <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                    <div className="px-2.5 py-3 text-center text-[11px] text-muted-foreground">
                       No se encontraron clientes
                     </div>
                   )}
@@ -904,31 +898,29 @@ export default function POS() {
             </div>
           )}
           {activeReservationId && (
-            <Badge variant="default" className="text-[9px] gap-1 bg-success mt-1.5">
-              <CalendarCheck className="h-3 w-3" />
-              Cargada desde reserva
+            <Badge variant="default" className="text-[8px] gap-1 bg-success mt-1">
+              <CalendarCheck className="h-2.5 w-2.5" />
+              Desde reserva
             </Badge>
           )}
         </div>
 
-        <Separator className="mb-2" />
-
-        {/* Cart items */}
-        <ScrollArea className="flex-1 my-2">
+        {/* Cart items - scrollable middle section */}
+        <div className="flex-1 overflow-y-auto min-h-0 px-3 py-2">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
-              <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-                <Receipt className="h-8 w-8 opacity-30" />
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+                <Receipt className="h-6 w-6 opacity-30" />
               </div>
-              <p className="font-semibold text-sm">Carrito vacío</p>
-              <p className="text-xs text-center mt-1 max-w-[200px]">Selecciona servicios, productos o carga una cita</p>
+              <p className="font-semibold text-xs">Carrito vacío</p>
+              <p className="text-[10px] text-center mt-0.5 max-w-[180px]">Selecciona servicios, productos o carga una cita</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {servicesInCart.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Servicios</p>
-                  <div className="space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Servicios</p>
+                  <div className="space-y-1.5">
                     {servicesInCart.map((item) => (
                       <CartItem
                         key={`service-${item.id}`}
@@ -944,8 +936,8 @@ export default function POS() {
               )}
               {productsInCart.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Productos</p>
-                  <div className="space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Productos</p>
+                  <div className="space-y-1.5">
                     {productsInCart.map((item) => (
                       <CartItem
                         key={`product-${item.id}`}
@@ -961,98 +953,90 @@ export default function POS() {
               )}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
-        {cart.length > 0 && (
-          <>
-            <Separator className="my-2" />
-            <div className="space-y-3 py-3">
-              {/* Discount */}
-              <div className="flex items-center gap-2">
-                <div className="flex border rounded-md overflow-hidden">
-                  <Button variant={discountType === "percent" ? "default" : "ghost"} size="sm" className="rounded-none h-8 px-2" onClick={() => setDiscountType("percent")}>
-                    <Percent className="h-3 w-3" />
+        {/* Sticky Footer - Totals & Actions */}
+        <div className="shrink-0 border-t border-border/40 bg-card px-3 py-2">
+          {cart.length > 0 && (
+            <div className="space-y-1.5 mb-2">
+              {/* Discount row */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex border rounded overflow-hidden shrink-0">
+                  <Button variant={discountType === "percent" ? "default" : "ghost"} size="sm" className="rounded-none h-6 w-6 p-0" onClick={() => setDiscountType("percent")}>
+                    <Percent className="h-2.5 w-2.5" />
                   </Button>
-                  <Button variant={discountType === "fixed" ? "default" : "ghost"} size="sm" className="rounded-none h-8 px-2" onClick={() => setDiscountType("fixed")}>
-                    <DollarSign className="h-3 w-3" />
+                  <Button variant={discountType === "fixed" ? "default" : "ghost"} size="sm" className="rounded-none h-6 w-6 p-0" onClick={() => setDiscountType("fixed")}>
+                    <DollarSign className="h-2.5 w-2.5" />
                   </Button>
                 </div>
-                <Input type="number" placeholder="Descuento" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="flex-1 h-8" />
-              </div>
-
-              {/* Tip */}
-              <div className="flex items-center gap-2">
-                <Label className="text-sm text-muted-foreground whitespace-nowrap">Propina:</Label>
-                <div className="flex gap-1 flex-1">
-                  {[5, 10, 15].map((percent) => (
-                    <Button key={percent} variant={tipPercent === percent ? "default" : "outline"} size="sm" className="flex-1 h-8 px-2" onClick={() => { setTipPercent(tipPercent === percent ? null : percent); setCustomTip(""); }}>
-                      {percent}%
-                    </Button>
-                  ))}
-                  <Input type="number" placeholder="S/" value={customTip} onChange={(e) => { setCustomTip(e.target.value); setTipPercent(null); }} className="w-16 h-8" />
+                <Input type="number" placeholder="Desc." value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="flex-1 h-6 text-[11px]" />
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <GraduationCap className="h-3 w-3 text-muted-foreground" />
+                  <Switch id="student" checked={isStudent} onCheckedChange={setIsStudent} className="scale-75" />
                 </div>
               </div>
 
-              {/* Student toggle */}
-              <div className="flex items-center justify-between">
-                <Label htmlFor="student" className="flex items-center gap-2 text-sm cursor-pointer">
-                  <GraduationCap className="h-4 w-4" />
-                  Cliente estudiante (-10%)
-                </Label>
-                <Switch id="student" checked={isStudent} onCheckedChange={setIsStudent} />
+              {/* Tip row */}
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground shrink-0">Propina:</span>
+                {[5, 10, 15].map((percent) => (
+                  <Button key={percent} variant={tipPercent === percent ? "default" : "outline"} size="sm" className="flex-1 h-5 px-1 text-[10px]" onClick={() => { setTipPercent(tipPercent === percent ? null : percent); setCustomTip(""); }}>
+                    {percent}%
+                  </Button>
+                ))}
+                <Input type="number" placeholder="S/" value={customTip} onChange={(e) => { setCustomTip(e.target.value); setTipPercent(null); }} className="w-12 h-5 text-[10px]" />
               </div>
             </div>
-            <Separator className="my-2" />
-          </>
-        )}
-
-        {/* Totals */}
-        <div className="space-y-1.5 py-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>S/ {subtotal.toFixed(2)}</span>
-          </div>
-          {totalDiscount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
-              <span>Descuento</span>
-              <span>-S/ {totalDiscount.toFixed(2)}</span>
-            </div>
           )}
-          {tipAmount > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Propina</span>
-              <span>S/ {tipAmount.toFixed(2)}</span>
+
+          {/* Totals */}
+          <div className="space-y-0.5">
+            <div className="flex justify-between text-[11px]">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>S/ {subtotal.toFixed(2)}</span>
             </div>
-          )}
-          <Separator className="my-2" />
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-lg">TOTAL</span>
-            <span className="font-display text-4xl text-primary">S/ {total.toFixed(2)}</span>
+            {totalDiscount > 0 && (
+              <div className="flex justify-between text-[11px] text-green-600">
+                <span>Descuento</span>
+                <span>-S/ {totalDiscount.toFixed(2)}</span>
+              </div>
+            )}
+            {tipAmount > 0 && (
+              <div className="flex justify-between text-[11px]">
+                <span className="text-muted-foreground">Propina</span>
+                <span>S/ {tipAmount.toFixed(2)}</span>
+              </div>
+            )}
+            <Separator className="my-1" />
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-sm">TOTAL</span>
+              <span className="font-display text-2xl text-primary font-bold">S/ {total.toFixed(2)}</span>
+            </div>
           </div>
+
+          {hasServicesWithoutBarber && (
+            <p className="text-destructive text-[10px] text-center my-1">⚠️ Asigna barbero a cada servicio</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <Button variant="outline" size="sm" className="h-10 gap-1.5 text-xs" onClick={saveCurrentSale} disabled={cart.length === 0}>
+              <Save className="h-3.5 w-3.5" />
+              Guardar
+            </Button>
+            <Button
+              size="sm"
+              className="h-10 gap-1.5 text-sm font-bold bg-secondary hover:bg-secondary/90"
+              onClick={() => setShowPaymentModal(true)}
+              disabled={cart.length === 0 || hasServicesWithoutBarber || isProcessing}
+            >
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "COBRAR"}
+            </Button>
+          </div>
+
+          <p className="text-[9px] text-muted-foreground text-center mt-1.5">
+            F1: Nuevo · F2: Cobrar · F9: Buscar · ESC: Limpiar
+          </p>
         </div>
-
-        {hasServicesWithoutBarber && (
-          <p className="text-destructive text-sm text-center mb-3">⚠️ Selecciona un barbero para cada servicio</p>
-        )}
-
-        <div className="grid grid-cols-2 gap-3 mt-auto pt-4">
-          <Button variant="outline" size="lg" className="h-14 gap-2" onClick={saveCurrentSale} disabled={cart.length === 0}>
-            <Save className="h-5 w-5" />
-            Guardar
-          </Button>
-          <Button
-            size="lg"
-            className="h-14 gap-2 text-lg font-bold bg-secondary hover:bg-secondary/90"
-            onClick={() => setShowPaymentModal(true)}
-            disabled={cart.length === 0 || hasServicesWithoutBarber || isProcessing}
-          >
-            {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "COBRAR"}
-          </Button>
-        </div>
-
-        <p className="text-[10px] text-muted-foreground text-center mt-3">
-          F1: Nuevo | F2: Cobrar | F9: Buscar | ESC: Limpiar
-        </p>
       </div>
 
       {/* Modals */}
