@@ -577,14 +577,14 @@ export default function POS() {
           </TabsList>
 
           <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0">
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto pb-3 mb-3 scrollbar-hide">
               {serviceCategories.map((cat) => (
                 <Button
                   key={cat}
                   variant={serviceCategory === cat ? "default" : "outline"}
                   size="sm"
                   onClick={() => setServiceCategory(cat)}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap h-8 text-xs"
                 >
                   {cat}
                 </Button>
@@ -592,7 +592,7 @@ export default function POS() {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 pb-4">
                 {filteredServices.map((service) => (
                   <ServiceCard
                     key={service.id}
