@@ -558,7 +558,7 @@ export default function POS() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden [&>div[role=tabpanel]]:flex-1 [&>div[role=tabpanel]]:min-h-0">
           <TabsList className="grid w-full grid-cols-3 h-9 mb-2">
             <TabsTrigger value="services" className="h-7 text-xs gap-1.5">
               <Scissors className="h-3.5 w-3.5" />
