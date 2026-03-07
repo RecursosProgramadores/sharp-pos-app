@@ -37,29 +37,29 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
     <button
       onClick={onClick}
       className={cn(
-        "relative flex items-center gap-3 px-3 py-2.5 rounded-lg border-l-[3px] border border-border/50",
-        "transition-all duration-150 active:scale-[0.98] touch-manipulation",
-        "hover:shadow-md text-left w-full",
+        "relative flex flex-col justify-between p-2 rounded-lg border-l-[3px] border border-border/50",
+        "transition-all duration-150 active:scale-[0.97] touch-manipulation",
+        "hover:shadow-md text-left w-full min-h-[56px]",
         colorClass
       )}
     >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="font-medium text-sm leading-tight line-clamp-1">
-            {service.name}
-          </span>
-          {service.is_popular && (
-            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 shrink-0" />
-          )}
-        </div>
-        <div className="flex items-center gap-1 mt-0.5">
-          <Clock className="h-3 w-3 text-muted-foreground" />
-          <span className="text-[11px] text-muted-foreground">{service.duration_minutes} min</span>
-        </div>
+      <div className="flex items-start justify-between gap-1 w-full">
+        <span className="font-medium text-xs leading-tight line-clamp-2 flex-1">
+          {service.name}
+        </span>
+        {service.is_popular && (
+          <Star className="h-2.5 w-2.5 text-yellow-500 fill-yellow-500 shrink-0 mt-0.5" />
+        )}
       </div>
-      <span className={cn("font-display text-lg font-bold shrink-0", priceColor)}>
-        S/ {service.price}
-      </span>
+      <div className="flex items-center justify-between mt-1">
+        <div className="flex items-center gap-0.5">
+          <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+          <span className="text-[10px] text-muted-foreground">{service.duration_minutes} min</span>
+        </div>
+        <span className={cn("font-display text-sm font-bold", priceColor)}>
+          S/ {service.price}
+        </span>
+      </div>
     </button>
   );
 }

@@ -530,13 +530,13 @@ export default function POS() {
     : null;
 
   return (
-    <div className="h-[calc(100vh-7rem)] flex gap-4 lg:gap-6">
+    <div className="h-[calc(100vh-5rem)] flex gap-3">
       {/* Left Panel - Catalog */}
-      <div className="flex-[6] flex flex-col min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <h1 className="font-display text-2xl md:text-3xl tracking-tight">Punto de Venta</h1>
-            <p className="text-muted-foreground text-sm">Ticket: {ticketNumber}</p>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="min-w-0">
+            <h1 className="font-display text-xl md:text-2xl tracking-tight leading-tight">Punto de Venta</h1>
+            <p className="text-muted-foreground text-xs">Ticket: {ticketNumber}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowDailySales(true)}>
@@ -555,36 +555,36 @@ export default function POS() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-3 h-11 mb-3">
-            <TabsTrigger value="services" className="h-9 text-sm gap-1.5">
-              <Scissors className="h-4 w-4" />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <TabsList className="grid w-full grid-cols-3 h-9 mb-2">
+            <TabsTrigger value="services" className="h-7 text-xs gap-1.5">
+              <Scissors className="h-3.5 w-3.5" />
               Servicios
             </TabsTrigger>
-            <TabsTrigger value="products" className="h-9 text-sm gap-1.5">
-              <Package2 className="h-4 w-4" />
+            <TabsTrigger value="products" className="h-7 text-xs gap-1.5">
+              <Package2 className="h-3.5 w-3.5" />
               Productos
             </TabsTrigger>
-            <TabsTrigger value="reservations" className="h-9 text-sm gap-1.5 relative">
-              <CalendarCheck className="h-4 w-4" />
+            <TabsTrigger value="reservations" className="h-7 text-xs gap-1.5 relative">
+              <CalendarCheck className="h-3.5 w-3.5" />
               Citas
               {todayReservations.length > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-success">
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[9px] bg-success">
                   {todayReservations.length}
                 </Badge>
               )}
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0">
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-3 scrollbar-hide">
+          <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden">
+            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide">
               {serviceCategories.map((cat) => (
                 <Button
                   key={cat}
                   variant={serviceCategory === cat ? "default" : "outline"}
                   size="sm"
                   onClick={() => setServiceCategory(cat)}
-                  className="whitespace-nowrap h-8 text-xs"
+                  className="whitespace-nowrap h-7 text-[11px] px-2.5"
                 >
                   {cat}
                 </Button>
@@ -592,7 +592,7 @@ export default function POS() {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 pb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-1.5 pb-2">
                 {filteredServices.map((service) => (
                   <ServiceCard
                     key={service.id}
@@ -604,28 +604,28 @@ export default function POS() {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="products" className="flex-1 flex flex-col min-h-0 mt-0">
-            <div className="flex flex-wrap gap-3 mb-3">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <TabsContent value="products" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden">
+            <div className="flex gap-2 mb-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="search-input"
                   placeholder="Buscar producto..."
-                  className="pl-10 h-10"
+                  className="pl-8 h-8 text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-3 scrollbar-hide">
+            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide">
               {productCategories.map((cat) => (
                 <Button
                   key={cat}
                   variant={selectedCategory === cat ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(cat)}
-                  className="whitespace-nowrap h-8 text-xs"
+                  className="whitespace-nowrap h-7 text-[11px] px-2.5"
                 >
                   {cat}
                 </Button>
@@ -633,7 +633,7 @@ export default function POS() {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 pb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-1.5 pb-2">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -642,7 +642,7 @@ export default function POS() {
                   />
                 ))}
                 {filteredProducts.length === 0 && (
-                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                  <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
                     No hay productos disponibles.
                   </div>
                 )}
@@ -650,23 +650,23 @@ export default function POS() {
             </ScrollArea>
           </TabsContent>
 
-          {/* NEW: Reservations Tab */}
-          <TabsContent value="reservations" className="flex-1 flex flex-col min-h-0 mt-0">
-            <div className="mb-4">
-              <h3 className="font-display text-lg mb-1">Citas de Hoy</h3>
-              <p className="text-sm text-muted-foreground">
-                Selecciona una reserva para cargarla al carrito automáticamente
+          {/* Reservations Tab */}
+          <TabsContent value="reservations" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden">
+            <div className="mb-2">
+              <h3 className="font-display text-sm font-bold">Citas de Hoy</h3>
+              <p className="text-xs text-muted-foreground">
+                Selecciona una reserva para cargarla al carrito
               </p>
             </div>
             <ScrollArea className="flex-1">
               {todayReservations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                  <CalendarCheck className="h-16 w-16 mb-4 opacity-30" />
-                  <p className="font-medium">No hay citas pendientes hoy</p>
-                  <p className="text-sm mt-1">Las reservas de la web aparecerán aquí</p>
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <CalendarCheck className="h-12 w-12 mb-3 opacity-30" />
+                  <p className="font-medium text-sm">No hay citas pendientes hoy</p>
+                  <p className="text-xs mt-1">Las reservas de la web aparecerán aquí</p>
                 </div>
               ) : (
-                <div className="grid gap-3 pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pb-2">
                   {todayReservations.map((reservation) => {
                     const svc = reservation.service as any;
                     const barber = reservation.barber as any;
@@ -732,7 +732,7 @@ export default function POS() {
       </div>
 
       {/* Right Panel - Cart */}
-      <div className="flex-[4] flex flex-col card-elevated p-4 lg:p-6 min-w-[320px] max-w-md">
+      <div className="w-[340px] shrink-0 flex flex-col card-elevated p-3 lg:p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-primary" />
