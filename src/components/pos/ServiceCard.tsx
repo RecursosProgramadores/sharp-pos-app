@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Scissors, Star } from "lucide-react";
+import { Star, Clock } from "lucide-react";
 
 interface ServiceCardProps {
   service: {
@@ -14,40 +14,51 @@ interface ServiceCardProps {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Cortes: "from-primary/80 to-primary",
-  Degradados: "from-violet-600/80 to-violet-700",
-  Ondulados: "from-sky-600/80 to-sky-700",
-  Tintes: "from-amber-600/80 to-amber-700",
-  "Otros Servicios": "from-emerald-600/80 to-emerald-700",
+  Cortes: "border-l-primary bg-primary/5 hover:bg-primary/10",
+  Degradados: "border-l-violet-500 bg-violet-500/5 hover:bg-violet-500/10",
+  Ondulados: "border-l-sky-500 bg-sky-500/5 hover:bg-sky-500/10",
+  Tintes: "border-l-amber-500 bg-amber-500/5 hover:bg-amber-500/10",
+  "Otros Servicios": "border-l-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10",
+};
+
+const PRICE_COLORS: Record<string, string> = {
+  Cortes: "text-primary",
+  Degradados: "text-violet-600 dark:text-violet-400",
+  Ondulados: "text-sky-600 dark:text-sky-400",
+  Tintes: "text-amber-600 dark:text-amber-400",
+  "Otros Servicios": "text-emerald-600 dark:text-emerald-400",
 };
 
 export function ServiceCard({ service, onClick }: ServiceCardProps) {
-  const gradient = CATEGORY_COLORS[service.category] || "from-primary/80 to-primary";
+  const colorClass = CATEGORY_COLORS[service.category] || CATEGORY_COLORS["Cortes"];
+  const priceColor = PRICE_COLORS[service.category] || "text-primary";
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "relative flex flex-col items-center justify-center p-4 md:p-5 rounded-xl",
-        "bg-gradient-to-br",
-        gradient,
-        "transition-all duration-200 active:scale-95 touch-manipulation",
-        "hover:shadow-lg hover:scale-[1.03] border-2 border-transparent hover:border-white/20",
-        "min-h-[100px] md:min-h-[120px]"
+        "relative flex items-center gap-3 px-3 py-2.5 rounded-lg border-l-[3px] border border-border/50",
+        "transition-all duration-150 active:scale-[0.98] touch-manipulation",
+        "hover:shadow-md text-left w-full",
+        colorClass
       )}
     >
-      {service.is_popular && (
-        <Star className="absolute top-2 right-2 h-3.5 w-3.5 text-yellow-300 fill-yellow-300" />
-      )}
-      <Scissors className="h-7 w-7 md:h-8 md:w-8 mb-1.5 text-white/80" />
-      <span className="font-medium text-white text-xs md:text-sm text-center leading-tight line-clamp-2">
-        {service.name}
-      </span>
-      <span className="font-display text-xl md:text-2xl text-white mt-1">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-sm leading-tight line-clamp-1">
+            {service.name}
+          </span>
+          {service.is_popular && (
+            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 shrink-0" />
+          )}
+        </div>
+        <div className="flex items-center gap-1 mt-0.5">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          <span className="text-[11px] text-muted-foreground">{service.duration_minutes} min</span>
+        </div>
+      </div>
+      <span className={cn("font-display text-lg font-bold shrink-0", priceColor)}>
         S/ {service.price}
-      </span>
-      <span className="text-[10px] text-white/60 mt-0.5">
-        {service.duration_minutes} min
       </span>
     </button>
   );

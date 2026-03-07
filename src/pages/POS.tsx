@@ -556,18 +556,18 @@ export default function POS() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-3 h-14 mb-4">
-            <TabsTrigger value="services" className="h-12 text-base gap-2">
-              <Scissors className="h-5 w-5" />
-              SERVICIOS
+          <TabsList className="grid w-full grid-cols-3 h-11 mb-3">
+            <TabsTrigger value="services" className="h-9 text-sm gap-1.5">
+              <Scissors className="h-4 w-4" />
+              Servicios
             </TabsTrigger>
-            <TabsTrigger value="products" className="h-12 text-base gap-2">
-              <Package2 className="h-5 w-5" />
-              PRODUCTOS
+            <TabsTrigger value="products" className="h-9 text-sm gap-1.5">
+              <Package2 className="h-4 w-4" />
+              Productos
             </TabsTrigger>
-            <TabsTrigger value="reservations" className="h-12 text-base gap-2 relative">
-              <CalendarCheck className="h-5 w-5" />
-              CITAS
+            <TabsTrigger value="reservations" className="h-9 text-sm gap-1.5 relative">
+              <CalendarCheck className="h-4 w-4" />
+              Citas
               {todayReservations.length > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-success">
                   {todayReservations.length}
@@ -577,14 +577,14 @@ export default function POS() {
           </TabsList>
 
           <TabsContent value="services" className="flex-1 flex flex-col min-h-0 mt-0">
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto pb-3 mb-3 scrollbar-hide">
               {serviceCategories.map((cat) => (
                 <Button
                   key={cat}
                   variant={serviceCategory === cat ? "default" : "outline"}
                   size="sm"
                   onClick={() => setServiceCategory(cat)}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap h-8 text-xs"
                 >
                   {cat}
                 </Button>
@@ -592,7 +592,7 @@ export default function POS() {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 pb-4">
                 {filteredServices.map((service) => (
                   <ServiceCard
                     key={service.id}
@@ -605,27 +605,27 @@ export default function POS() {
           </TabsContent>
 
           <TabsContent value="products" className="flex-1 flex flex-col min-h-0 mt-0">
-            <div className="flex flex-wrap gap-3 mb-4">
+            <div className="flex flex-wrap gap-3 mb-3">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="search-input"
                   placeholder="Buscar producto..."
-                  className="pl-10 h-12"
+                  className="pl-10 h-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto pb-3 mb-3 scrollbar-hide">
               {productCategories.map((cat) => (
                 <Button
                   key={cat}
                   variant={selectedCategory === cat ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(cat)}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap h-8 text-xs"
                 >
                   {cat}
                 </Button>
@@ -633,7 +633,7 @@ export default function POS() {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 pb-4">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id}
