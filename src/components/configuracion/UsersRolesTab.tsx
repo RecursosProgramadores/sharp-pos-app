@@ -118,6 +118,8 @@ export default function UsersRolesTab() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role, created_at");
@@ -136,18 +138,22 @@ export default function UsersRolesTab() {
         console.error("Error fetching profiles:", profilesError);
       }
 
-      const systemUsers: SystemUser[] = (rolesData || []).map((roleEntry) => {
+      // Group by user_id - one entry per user (take the first role found)
+      const userMap = new Map<string, SystemUser>();
+      for (const roleEntry of rolesData || []) {
+        if (userMap.has(roleEntry.user_id)) continue;
         const profile = profilesData?.find((p) => p.id === roleEntry.user_id);
-        return {
+        userMap.set(roleEntry.user_id, {
           id: roleEntry.user_id,
           email: profile?.full_name || "Usuario",
           role: roleEntry.role as "admin" | "cajero",
           created_at: roleEntry.created_at,
           full_name: profile?.full_name || "Usuario",
-        };
-      });
+          is_current_user: roleEntry.user_id === currentUser?.id,
+        });
+      }
 
-      setUsers(systemUsers);
+      setUsers(Array.from(userMap.values()));
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error inesperado");
