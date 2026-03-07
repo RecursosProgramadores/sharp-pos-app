@@ -533,13 +533,13 @@ export default function POS() {
     : null;
 
   return (
-    <div className="h-[calc(100vh-5rem)] flex gap-3">
+    <div className="h-[calc(100vh-4rem)] flex gap-3 p-1">
       {/* Left Panel - Catalog */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="min-w-0">
-            <h1 className="font-display text-xl md:text-2xl tracking-tight leading-tight">Punto de Venta</h1>
-            <p className="text-muted-foreground text-xs">Ticket: {ticketNumber}</p>
+            <h1 className="font-display text-lg tracking-tight leading-tight">Punto de Venta</h1>
+            <p className="text-muted-foreground text-[11px]">Ticket: {ticketNumber}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowDailySales(true)}>
