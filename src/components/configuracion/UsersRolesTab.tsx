@@ -396,7 +396,15 @@ export default function UsersRolesTab() {
                           <SelectValue placeholder="Seleccionar rol" />
                         </SelectTrigger>
                         <SelectContent>
-                          {roles.map((role) => (
+                          {roles
+                            .filter((role) => {
+                              // Only allow creating cajero users if admin already exists
+                              if (role.id === "admin" && users.some((u) => u.role === "admin")) {
+                                return false;
+                              }
+                              return true;
+                            })
+                            .map((role) => (
                             <SelectItem key={role.id} value={role.id}>
                               <div className="flex items-center gap-2">
                                 <role.icon className="h-4 w-4" />
