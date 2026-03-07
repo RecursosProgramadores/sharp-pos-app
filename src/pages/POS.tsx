@@ -537,6 +537,14 @@ export default function POS() {
     ? clients.find(c => c.id === selectedClient) 
     : null;
 
+  const filteredClients = useMemo(() => {
+    if (!clientSearchTerm) return clients.slice(0, 8);
+    const term = clientSearchTerm.toLowerCase();
+    return clients.filter(c => 
+      c.full_name.toLowerCase().includes(term) || c.phone.includes(term)
+    ).slice(0, 8);
+  }, [clients, clientSearchTerm]);
+
   return (
     <div className="h-[calc(100vh-4rem)] flex gap-3 p-1">
       {/* Left Panel - Catalog */}
