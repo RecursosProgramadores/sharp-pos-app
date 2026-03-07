@@ -69,6 +69,7 @@ interface SystemUser {
   role: "admin" | "cajero";
   created_at: string;
   full_name: string;
+  is_current_user: boolean;
 }
 
 const roles = [
@@ -117,6 +118,8 @@ export default function UsersRolesTab() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role, created_at");
@@ -135,18 +138,22 @@ export default function UsersRolesTab() {
         console.error("Error fetching profiles:", profilesError);
       }
 
-      const systemUsers: SystemUser[] = (rolesData || []).map((roleEntry) => {
+      // Group by user_id - one entry per user (take the first role found)
+      const userMap = new Map<string, SystemUser>();
+      for (const roleEntry of rolesData || []) {
+        if (userMap.has(roleEntry.user_id)) continue;
         const profile = profilesData?.find((p) => p.id === roleEntry.user_id);
-        return {
+        userMap.set(roleEntry.user_id, {
           id: roleEntry.user_id,
           email: profile?.full_name || "Usuario",
           role: roleEntry.role as "admin" | "cajero",
           created_at: roleEntry.created_at,
           full_name: profile?.full_name || "Usuario",
-        };
-      });
+          is_current_user: roleEntry.user_id === currentUser?.id,
+        });
+      }
 
-      setUsers(systemUsers);
+      setUsers(Array.from(userMap.values()));
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error inesperado");
@@ -389,7 +396,15 @@ export default function UsersRolesTab() {
                           <SelectValue placeholder="Seleccionar rol" />
                         </SelectTrigger>
                         <SelectContent>
-                          {roles.map((role) => (
+                          {roles
+                            .filter((role) => {
+                              // Only allow creating cajero users if admin already exists
+                              if (role.id === "admin" && users.some((u) => u.role === "admin")) {
+                                return false;
+                              }
+                              return true;
+                            })
+                            .map((role) => (
                             <SelectItem key={role.id} value={role.id}>
                               <div className="flex items-center gap-2">
                                 <role.icon className="h-4 w-4" />
@@ -470,11 +485,11 @@ export default function UsersRolesTab() {
                   </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow key={user.id} className={user.is_current_user ? "bg-primary/5" : ""}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback className="bg-primary/10 text-primary">
+                          <Avatar className={user.role === "admin" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}>
+                            <AvatarFallback className={user.role === "admin" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}>
                               {user.full_name
                                 .split(" ")
                                 .map((n) => n[0])
@@ -484,14 +499,14 @@ export default function UsersRolesTab() {
                           </Avatar>
                           <div>
                             <p className="font-medium">{user.full_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              ID: {user.id.slice(0, 8)}...
-                            </p>
+                            {user.is_current_user && (
+                              <span className="text-xs text-primary font-medium">Tú</span>
+                            )}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString("es-MX", {
                           day: "2-digit",
                           month: "short",
@@ -499,34 +514,36 @@ export default function UsersRolesTab() {
                         })}
                       </TableCell>
                       <TableCell className="text-right">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. El usuario "{user.full_name}" perderá acceso al sistema.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        {user.role !== "admin" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. El usuario "{user.full_name}" perderá acceso al sistema.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
