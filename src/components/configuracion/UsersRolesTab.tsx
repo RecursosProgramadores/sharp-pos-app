@@ -90,7 +90,7 @@ const roles = [
 
 const newUserSchema = z.object({
   email: z.string().email("Email inválido").max(255),
-  password: z.string().min(6, "Mínimo 6 caracteres").max(100),
+  password: z.string().min(8, "Mínimo 8 caracteres").max(100),
   confirmPassword: z.string(),
   name: z.string().min(2, "Nombre muy corto").max(100),
   role: z.enum(["admin", "cajero"], { required_error: "Selecciona un rol" }),
@@ -348,7 +348,7 @@ export default function UsersRolesTab() {
                           onChange={(e) =>
                             setNewUser({ ...newUser, password: e.target.value })
                           }
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder="Mínimo 8 caracteres"
                         />
                         <Button
                           type="button"
