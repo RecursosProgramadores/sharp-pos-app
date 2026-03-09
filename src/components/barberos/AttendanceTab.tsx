@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useBarbers, useBarberAttendance, useBarberSchedules } from "@/hooks/useBarbers";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 
 const statusConfig = {
   present: { label: "Presente", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
