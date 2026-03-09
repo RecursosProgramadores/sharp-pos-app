@@ -491,9 +491,9 @@ export function ClientDetailsModal({
                       <SelectValue placeholder="Seleccionar barbero" />
                     </SelectTrigger>
                     <SelectContent>
-                      {barbers.map((barber) => (
-                        <SelectItem key={barber.id} value={barber.name}>
-                          {barber.name}
+                      {dbBarbers.map((barber) => (
+                        <SelectItem key={barber.id} value={barber.full_name}>
+                          {barber.full_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
