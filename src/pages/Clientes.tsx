@@ -389,7 +389,8 @@ export default function Clientes() {
         </TabsContent>
 
         <TabsContent value="loyalty">
-          <LoyaltyConfiTab       </TabsContent>
+          <LoyaltyTab />
+        </TabsContent>
       </Tabs>
 
       <NewClientModal 
