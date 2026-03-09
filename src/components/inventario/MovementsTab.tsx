@@ -61,10 +61,7 @@ export function MovementsTab() {
       Responsable: m.responsible || "-",
       Motivo: m.reason || "-",
     }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
-    XLSX.writeFile(wb, `Movimientos_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    await exportJsonToExcel(data, "Movimientos", `Movimientos_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const handleExportPDF = () => {

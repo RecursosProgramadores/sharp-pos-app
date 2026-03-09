@@ -79,10 +79,7 @@ export function StatsTab() {
       Monto: `$${h.price}`,
       Pago: h.payment_method,
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Estadísticas");
-    XLSX.writeFile(wb, `Estadisticas_Barberos.xlsx`);
+    await exportJsonToExcel(rows, "Estadísticas", `Estadisticas_Barberos.xlsx`);
   };
 
   const exportPDF = () => {

@@ -130,10 +130,7 @@ export function AttendanceTab() {
       "Horario Programado": item.scheduledStart ? `${item.scheduledStart} - ${item.scheduledEnd}` : "-",
       Notas: item.record?.notes || "",
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
-    XLSX.writeFile(wb, `Asistencia_${selectedDate}.xlsx`);
+    await exportJsonToExcel(rows, "Asistencia", `Asistencia_${selectedDate}.xlsx`);
     toast.success("Excel exportado");
   };
 

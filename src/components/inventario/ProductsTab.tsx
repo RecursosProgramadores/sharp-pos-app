@@ -95,10 +95,7 @@ export function ProductsTab() {
       "Stock Mín.": p.min_stock,
       Estado: getProductStatus(p) === "available" ? "Disponible" : getProductStatus(p) === "low_stock" ? "Bajo Stock" : "Agotado",
     }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Productos");
-    XLSX.writeFile(wb, `Inventario_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    await exportJsonToExcel(data, "Productos", `Inventario_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const getStatusBadge = (p: Product) => {

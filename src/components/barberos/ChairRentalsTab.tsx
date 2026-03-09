@@ -113,10 +113,7 @@ export function ChairRentalsTab() {
       Estado: statusConfig[r.status as keyof typeof statusConfig]?.label || r.status,
       Depósito: `$${r.deposit_amount || 0}`,
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Alquileres");
-    XLSX.writeFile(wb, "Alquileres_Sillas.xlsx");
+    await exportJsonToExcel(rows, "Alquileres", "Alquileres_Sillas.xlsx");
   };
 
   const exportPDF = () => {
