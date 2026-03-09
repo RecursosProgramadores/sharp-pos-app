@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import { exportAoaToExcel } from "@/lib/excelExport";
 
 type TableData = { headers: string[]; rows: (string | number)[][] };
 type Section = { title: string; tables: TableData[]; summary?: Record<string, string | number> };
