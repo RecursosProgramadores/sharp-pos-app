@@ -1,0 +1,1 @@
+ALTER TABLE public.business_settings ADD CONSTRAINT business_settings_setting_key_unique UNIQUE (setting_key);

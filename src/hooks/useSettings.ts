@@ -29,11 +29,14 @@ export function useSettings<T = any>(settingKey: string, defaultValue: T) {
 
       const { error } = await supabase
         .from("business_settings" as any)
-        .update({
-          setting_value: value as any,
-          updated_by: userId,
-        })
-        .eq("setting_key", settingKey);
+        .upsert(
+          {
+            setting_key: settingKey,
+            setting_value: value as any,
+            updated_by: userId,
+          } as any,
+          { onConflict: "setting_key" }
+        );
 
       if (error) throw error;
     },

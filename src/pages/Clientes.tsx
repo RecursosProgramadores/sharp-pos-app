@@ -41,8 +41,7 @@ import { NewClientModal } from "@/components/clientes/NewClientModal";
 import { ClientDetailsModal } from "@/components/clientes/ClientDetailsModal";
 import { BirthdayReminders } from "@/components/clientes/BirthdayReminders";
 import { InactiveClients } from "@/components/clientes/InactiveClients";
-import LoyaltyTab from "@/components/configuracion/LoyaltyTab";
-import { CampaignBuilder } from "@/components/clientes/CampaignBuilder";
+import LoyaltyTab from "@/components/configuracion/LoyaltyTabport { CampaignBuilder } from "@/components/clientes/CampaignBuilder";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
 import { levelConfig } from "@/types/client";
@@ -389,8 +388,7 @@ export default function Clientes() {
         </TabsContent>
 
         <TabsContent value="loyalty">
-          <LoyaltyConfig />
-        </TabsContent>
+          <LoyaltyConfiTab       </TabsContent>
       </Tabs>
 
       <NewClientModal 
