@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings } from "@/hooks/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel, jsonToCsv } from "@/lib/excelExport";
 
 const defaultSecurity = {
   passwordExpiry: { enabled: true, days: 90 },
