@@ -114,13 +114,64 @@ export function ClientDetailsModal({
 }: ClientDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Client | null>(null);
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Fetch loyalty config from DB
+  const { data: loyaltyConfig } = useQuery({
+    queryKey: ["business-settings", "loyalty"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("business_settings")
+        .select("setting_value")
+        .eq("setting_key", "loyalty")
+        .single();
+      if (error) return null;
+      return data?.setting_value as any;
+    },
+    enabled: open,
+  });
+
+  // Fetch barbers for preferences tab
+  const { data: dbBarbers = [] } = useQuery({
+    queryKey: ["barbers-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("barbers")
+        .select("id, full_name")
+        .eq("active", true)
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  // Fetch services for preferences tab
+  const { data: dbServices = [] } = useQuery({
+    queryKey: ["services-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("name")
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data.map(s => s.name);
+    },
+    enabled: open,
+  });
+
+  const rewards = (loyaltyConfig?.rewards || []).filter((r: any) => r.active);
+  const nextRewardPoints = rewards.length > 0
+    ? Math.min(...rewards.map((r: any) => r.pointsRequired))
+    : 50;
 
   if (!client) return null;
 
   const level = levelConfig[client.level];
   const initials = client.name.split(" ").map((n) => n[0]).join("");
-  const nextRewardPoints = 50;
-  const progressToReward = (client.points / nextRewardPoints) * 100;
+  const progressToReward = Math.min((client.points / nextRewardPoints) * 100, 100);
 
   const handleEdit = () => {
     setEditData({ ...client });
@@ -151,11 +202,27 @@ export function ClientDetailsModal({
     window.open(`https://wa.me/${client.phone.replace(/\D/g, "")}?text=${message}`, "_blank");
   };
 
-  const handleRedeemReward = (reward: { name: string; points: number }) => {
-    if (client.points >= reward.points) {
-      toast.success(`Recompensa "${reward.name}" canjeada exitosamente`);
-    } else {
+  const handleRedeemReward = async (reward: { name: string; pointsRequired: number }) => {
+    if (client.points < reward.pointsRequired) {
       toast.error("No tienes suficientes puntos");
+      return;
+    }
+    setIsRedeeming(true);
+    try {
+      const newPoints = client.points - reward.pointsRequired;
+      const { error } = await supabase
+        .from("clients")
+        .update({ points: newPoints })
+        .eq("id", (client as any).id ?? "");
+      if (error) throw error;
+      toast.success(`Recompensa "${reward.name}" canjeada exitosamente`);
+      // Update local state
+      onUpdate({ ...client, points: newPoints });
+      queryClient.invalidateQueries({ queryKey: ["pos-clients"] });
+    } catch (err: any) {
+      toast.error("Error al canjear: " + err.message);
+    } finally {
+      setIsRedeeming(false);
     }
   };
 
