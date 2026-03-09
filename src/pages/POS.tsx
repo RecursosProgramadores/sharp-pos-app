@@ -430,11 +430,16 @@ export default function POS() {
         if (itemsError) throw itemsError;
       }
 
-      // Update client stats if a client is selected
+      // Update client stats with dynamic loyalty points
       if (clientId) {
+        const pointsPerDollar = loyaltyConfig?.enabled !== false && loyaltyConfig?.pointsPerDollar
+          ? loyaltyConfig.pointsPerDollar
+          : 10; // default: 1 point per S/10
+        const earnedPoints = Math.floor(total / pointsPerDollar);
         await supabase.rpc("update_client_after_sale", {
           p_client_id: clientId,
           p_amount: total,
+          p_points: earnedPoints,
         });
       }
 
