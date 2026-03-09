@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStockMovements, useCreateMovement, useProducts } from "@/hooks/useInventory";
 import { Skeleton } from "@/components/ui/skeleton";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FileSpreadsheet, Download } from "lucide-react";
