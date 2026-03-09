@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useBarbers, useChairRentals } from "@/hooks/useBarbers";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
