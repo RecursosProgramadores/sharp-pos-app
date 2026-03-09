@@ -156,6 +156,20 @@ export default function POS() {
     },
   });
 
+  // Fetch loyalty config for points calculation
+  const { data: loyaltyConfig } = useQuery({
+    queryKey: ["business-settings", "loyalty"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("business_settings")
+        .select("setting_value")
+        .eq("setting_key", "loyalty")
+        .single();
+      if (error) return null;
+      return data?.setting_value as { enabled?: boolean; pointsPerDollar?: number } | null;
+    },
+  });
+
   // Fetch today's pending/confirmed reservations
   const today = new Date().toISOString().split("T")[0];
   const { data: todayReservations = [] } = useQuery({
