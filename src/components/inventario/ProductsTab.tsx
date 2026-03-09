@@ -23,7 +23,7 @@ import { NewProductModal } from "./NewProductModal";
 import { ProductDetailsModal } from "./ProductDetailsModal";
 import { useProducts, useDeleteProduct, type Product } from "@/hooks/useInventory";
 import { Skeleton } from "@/components/ui/skeleton";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 
 const categories = ["Todos", "Pomadas", "Shampoos", "Aceites", "Ceras", "Herramientas", "Tintes", "Aftershave", "Cuidado", "Otros", "General"];
 const stockStatuses = ["Todos", "Disponible", "Bajo Stock", "Agotado"];
