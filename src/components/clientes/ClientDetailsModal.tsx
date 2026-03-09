@@ -11,7 +11,10 @@ import {
   MessageCircle,
   Save,
   X,
+  Loader2,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -101,37 +104,7 @@ const spendingData = [
   { month: "Ene", amount: 45 },
 ];
 
-const rewards = [
-  { id: 1, name: "Corte Gratis", points: 50, description: "Un corte clásico gratis" },
-  { id: 2, name: "Combo Especial", points: 100, description: "Corte + Barba gratis" },
-  { id: 3, name: "Tratamiento Premium", points: 150, description: "Tratamiento capilar completo" },
-  { id: 4, name: "Día VIP", points: 200, description: "Todos los servicios con 50% descuento" },
-];
-
-const services = [
-  "Corte Clásico",
-  "Fade",
-  "Barba",
-  "Diseño",
-  "Corte + Barba",
-  "Tratamiento Capilar",
-  "Coloración",
-];
-
-const barbers = [
-  { id: 1, name: "Carlos Mendoza" },
-  { id: 2, name: "Miguel Torres" },
-  { id: 3, name: "Roberto García" },
-  { id: 4, name: "Juan Pérez" },
-];
-
-const pointsHistory = [
-  { date: "2024-01-15", action: "Visita - Corte + Barba", points: 3, type: "earned" },
-  { date: "2024-01-02", action: "Visita - Fade", points: 2, type: "earned" },
-  { date: "2023-12-25", action: "Bonus Navidad", points: 10, type: "earned" },
-  { date: "2023-12-18", action: "Canje - Descuento 10%", points: -20, type: "redeemed" },
-  { date: "2023-12-18", action: "Visita - Corte Clásico", points: 2, type: "earned" },
-];
+// Removed hardcoded rewards and pointsHistory - now fetched from DB
 
 export function ClientDetailsModal({
   client,
@@ -141,13 +114,64 @@ export function ClientDetailsModal({
 }: ClientDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Client | null>(null);
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Fetch loyalty config from DB
+  const { data: loyaltyConfig } = useQuery({
+    queryKey: ["business-settings", "loyalty"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("business_settings")
+        .select("setting_value")
+        .eq("setting_key", "loyalty")
+        .single();
+      if (error) return null;
+      return data?.setting_value as any;
+    },
+    enabled: open,
+  });
+
+  // Fetch barbers for preferences tab
+  const { data: dbBarbers = [] } = useQuery({
+    queryKey: ["barbers-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("barbers")
+        .select("id, full_name")
+        .eq("active", true)
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  // Fetch services for preferences tab
+  const { data: dbServices = [] } = useQuery({
+    queryKey: ["services-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("name")
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data.map(s => s.name);
+    },
+    enabled: open,
+  });
+
+  const rewards = (loyaltyConfig?.rewards || []).filter((r: any) => r.active);
+  const nextRewardPoints = rewards.length > 0
+    ? Math.min(...rewards.map((r: any) => r.pointsRequired))
+    : 50;
 
   if (!client) return null;
 
   const level = levelConfig[client.level];
   const initials = client.name.split(" ").map((n) => n[0]).join("");
-  const nextRewardPoints = 50;
-  const progressToReward = (client.points / nextRewardPoints) * 100;
+  const progressToReward = Math.min((client.points / nextRewardPoints) * 100, 100);
 
   const handleEdit = () => {
     setEditData({ ...client });
@@ -178,11 +202,27 @@ export function ClientDetailsModal({
     window.open(`https://wa.me/${client.phone.replace(/\D/g, "")}?text=${message}`, "_blank");
   };
 
-  const handleRedeemReward = (reward: { name: string; points: number }) => {
-    if (client.points >= reward.points) {
-      toast.success(`Recompensa "${reward.name}" canjeada exitosamente`);
-    } else {
+  const handleRedeemReward = async (reward: { name: string; pointsRequired: number }) => {
+    if (client.points < reward.pointsRequired) {
       toast.error("No tienes suficientes puntos");
+      return;
+    }
+    setIsRedeeming(true);
+    try {
+      const newPoints = client.points - reward.pointsRequired;
+      const { error } = await supabase
+        .from("clients")
+        .update({ points: newPoints })
+        .eq("id", (client as any).id ?? "");
+      if (error) throw error;
+      toast.success(`Recompensa "${reward.name}" canjeada exitosamente`);
+      // Update local state
+      onUpdate({ ...client, points: newPoints });
+      queryClient.invalidateQueries({ queryKey: ["pos-clients"] });
+    } catch (err: any) {
+      toast.error("Error al canjear: " + err.message);
+    } finally {
+      setIsRedeeming(false);
     }
   };
 
@@ -427,7 +467,7 @@ export function ClientDetailsModal({
                 <div className="space-y-3">
                   <Label>Servicios Favoritos</Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {services.map((service) => (
+                    {dbServices.map((service) => (
                       <div key={service} className="flex items-center space-x-2">
                         <Checkbox
                           id={`edit-${service}`}
@@ -451,9 +491,9 @@ export function ClientDetailsModal({
                       <SelectValue placeholder="Seleccionar barbero" />
                     </SelectTrigger>
                     <SelectContent>
-                      {barbers.map((barber) => (
-                        <SelectItem key={barber.id} value={barber.name}>
-                          {barber.name}
+                      {dbBarbers.map((barber) => (
+                        <SelectItem key={barber.id} value={barber.full_name}>
+                          {barber.full_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -515,61 +555,54 @@ export function ClientDetailsModal({
             {/* Available Rewards */}
             <div>
               <p className="font-medium mb-3">Recompensas Disponibles</p>
-              <div className="grid grid-cols-2 gap-3">
-                {rewards.map((reward) => (
-                  <div
-                    key={reward.id}
-                    className={`p-3 rounded-lg border ${
-                      client.points >= reward.points
-                        ? "bg-success/10 border-success/30"
-                        : "bg-muted/30 border-border"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">{reward.name}</span>
-                      <Badge variant={client.points >= reward.points ? "default" : "outline"}>
-                        {reward.points} pts
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-2">{reward.description}</p>
-                    <Button
-                      size="sm"
-                      variant={client.points >= reward.points ? "default" : "outline"}
-                      className="w-full"
-                      disabled={client.points < reward.points}
-                      onClick={() => handleRedeemReward(reward)}
-                    >
-                      Canjear
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Points History */}
-            <div>
-              <p className="font-medium mb-3">Historial de Puntos</p>
-              <div className="space-y-2">
-                {pointsHistory.map((entry, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{entry.action}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(entry.date).toLocaleDateString("es-MX")}
-                      </p>
-                    </div>
-                    <span
-                      className={`font-display text-lg ${
-                        entry.type === "earned" ? "text-success" : "text-destructive"
+              {rewards.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No hay recompensas configuradas aún.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {rewards.map((reward: any) => (
+                    <div
+                      key={reward.id}
+                      className={`p-3 rounded-lg border ${
+                        client.points >= reward.pointsRequired
+                          ? "bg-success/10 border-success/30"
+                          : "bg-muted/30 border-border"
                       }`}
                     >
-                      {entry.type === "earned" ? "+" : ""}{entry.points}
-                    </span>
-                  </div>
-                ))}
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm">{reward.name}</span>
+                        <Badge variant={client.points >= reward.pointsRequired ? "default" : "outline"}>
+                          {reward.pointsRequired} pts
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{reward.description}</p>
+                      <Button
+                        size="sm"
+                        variant={client.points >= reward.pointsRequired ? "default" : "outline"}
+                        className="w-full"
+                        disabled={client.points < reward.pointsRequired || isRedeeming}
+                        onClick={() => handleRedeemReward(reward)}
+                      >
+                        {isRedeeming ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                        Canjear
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Points Summary */}
+            <div>
+              <p className="font-medium mb-3">Resumen</p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <span className="text-sm">Puntos acumulados</span>
+                  <span className="font-display text-lg text-success">⭐ {client.points}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <span className="text-sm">Nivel actual</span>
+                  <Badge className={`${level.color} text-foreground`}>{level.icon} {level.label}</Badge>
+                </div>
               </div>
             </div>
           </TabsContent>

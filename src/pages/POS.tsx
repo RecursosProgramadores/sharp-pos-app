@@ -156,6 +156,20 @@ export default function POS() {
     },
   });
 
+  // Fetch loyalty config for points calculation
+  const { data: loyaltyConfig } = useQuery({
+    queryKey: ["business-settings", "loyalty"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("business_settings")
+        .select("setting_value")
+        .eq("setting_key", "loyalty")
+        .single();
+      if (error) return null;
+      return data?.setting_value as { enabled?: boolean; pointsPerDollar?: number } | null;
+    },
+  });
+
   // Fetch today's pending/confirmed reservations
   const today = new Date().toISOString().split("T")[0];
   const { data: todayReservations = [] } = useQuery({
@@ -416,11 +430,16 @@ export default function POS() {
         if (itemsError) throw itemsError;
       }
 
-      // Update client stats if a client is selected
+      // Update client stats with dynamic loyalty points
       if (clientId) {
+        const pointsPerDollar = loyaltyConfig?.enabled !== false && loyaltyConfig?.pointsPerDollar
+          ? loyaltyConfig.pointsPerDollar
+          : 10; // default: 1 point per S/10
+        const earnedPoints = Math.floor(total / pointsPerDollar);
         await supabase.rpc("update_client_after_sale", {
           p_client_id: clientId,
           p_amount: total,
+          p_points: earnedPoints,
         });
       }
 
