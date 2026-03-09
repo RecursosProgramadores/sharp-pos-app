@@ -555,59 +555,56 @@ export function ClientDetailsModal({
             {/* Available Rewards */}
             <div>
               <p className="font-medium mb-3">Recompensas Disponibles</p>
-              <div className="grid grid-cols-2 gap-3">
-                {rewards.map((reward) => (
-                  <div
-                    key={reward.id}
-                    className={`p-3 rounded-lg border ${
-                      client.points >= reward.points
-                        ? "bg-success/10 border-success/30"
-                        : "bg-muted/30 border-border"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">{reward.name}</span>
-                      <Badge variant={client.points >= reward.points ? "default" : "outline"}>
-                        {reward.points} pts
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-2">{reward.description}</p>
-                    <Button
-                      size="sm"
-                      variant={client.points >= reward.points ? "default" : "outline"}
-                      className="w-full"
-                      disabled={client.points < reward.points}
-                      onClick={() => handleRedeemReward(reward)}
-                    >
-                      Canjear
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Points History */}
-            <div>
-              <p className="font-medium mb-3">Historial de Puntos</p>
-              <div className="space-y-2">
-                {pointsHistory.map((entry, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{entry.action}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(entry.date).toLocaleDateString("es-MX")}
-                      </p>
-                    </div>
-                    <span
-                      className={`font-display text-lg ${
-                        entry.type === "earned" ? "text-success" : "text-destructive"
+              {rewards.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No hay recompensas configuradas aún.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {rewards.map((reward: any) => (
+                    <div
+                      key={reward.id}
+                      className={`p-3 rounded-lg border ${
+                        client.points >= reward.pointsRequired
+                          ? "bg-success/10 border-success/30"
+                          : "bg-muted/30 border-border"
                       }`}
                     >
-                      {entry.type === "earned" ? "+" : ""}{entry.points}
-                    </span>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm">{reward.name}</span>
+                        <Badge variant={client.points >= reward.pointsRequired ? "default" : "outline"}>
+                          {reward.pointsRequired} pts
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{reward.description}</p>
+                      <Button
+                        size="sm"
+                        variant={client.points >= reward.pointsRequired ? "default" : "outline"}
+                        className="w-full"
+                        disabled={client.points < reward.pointsRequired || isRedeeming}
+                        onClick={() => handleRedeemReward(reward)}
+                      >
+                        {isRedeeming ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                        Canjear
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Points Summary */}
+            <div>
+              <p className="font-medium mb-3">Resumen</p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <span className="text-sm">Puntos acumulados</span>
+                  <span className="font-display text-lg text-success">⭐ {client.points}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <span className="text-sm">Nivel actual</span>
+                  <Badge className={`${level.color} text-foreground`}>{level.icon} {level.label}</Badge>
+                </div>
+              </div>
+            </div>
                   </div>
                 ))}
               </div>
