@@ -42,6 +42,7 @@ import { ClientDetailsModal } from "@/components/clientes/ClientDetailsModal";
 import { BirthdayReminders } from "@/components/clientes/BirthdayReminders";
 import { InactiveClients } from "@/components/clientes/InactiveClients";
 import { LoyaltyConfig } from "@/components/clientes/LoyaltyConfig";
+import { CampaignBuilder } from "@/components/clientes/CampaignBuilder";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
 import { levelConfig } from "@/types/client";
@@ -357,7 +358,8 @@ export default function Clientes() {
           </div>
         </TabsContent>
 
-        <TabsContent value="campaigns" className="space-y-4">
+        <TabsContent value="campaigns" className="space-y-6">
+          <CampaignBuilder clients={clients} />
           <div className="grid gap-6 lg:grid-cols-2">
             <BirthdayReminders clients={clients.map(c => ({
               id: parseInt(c.id.slice(0, 8), 16),

@@ -1,16 +1,21 @@
 import { MapPin, Clock, MessageCircle, Phone, CheckCircle } from "lucide-react";
 import { useLocations } from "@/hooks/usePublicData";
+import { useBusinessInfo, buildWhatsAppLink } from "@/hooks/useBusinessInfo";
 
 export function LandingContact() {
   const { data: locations } = useLocations();
+  const biz = useBusinessInfo();
+
+  const mainPhone = biz.phone || "987457832";
+  const defaultMsg = "Hola, estoy interesado en obtener más información. ¿Podrían ayudarme?";
 
   const fallbackLocations = [
     {
       name: "Sede Principal",
-      address: "Jr. Constitución 235, Huánuco",
-      phone: "987 457 832",
+      address: biz.address || "Jr. Constitución 235, Huánuco",
+      phone: mainPhone,
       schedule: "Lunes a Sábado: 9:00 AM - 8:00 PM",
-      whatsapp: "51987457832",
+      whatsapp: mainPhone,
     },
   ];
 
@@ -52,9 +57,9 @@ export function LandingContact() {
                     </div>
                   )}
                 </div>
-                {loc.whatsapp && (
+                {(loc.whatsapp || loc.phone) && (
                   <a
-                    href={`https://wa.me/${loc.whatsapp}`}
+                    href={buildWhatsAppLink(loc.whatsapp || loc.phone || mainPhone, defaultMsg)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-4 inline-flex items-center gap-2 bg-green-600/15 hover:bg-green-600/25 text-green-400 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors border border-green-600/15"
@@ -84,6 +89,17 @@ export function LandingContact() {
                 </div>
               ))}
             </div>
+
+            {/* Global WhatsApp CTA */}
+            <a
+              href={buildWhatsAppLink(mainPhone, defaultMsg)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-8 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Contáctanos por WhatsApp
+            </a>
           </div>
         </div>
       </div>
