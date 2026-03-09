@@ -604,6 +604,7 @@ export function ClientDetailsModal({
                   <Badge className={`${level.color} text-foreground`}>{level.icon} {level.label}</Badge>
                 </div>
               </div>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
