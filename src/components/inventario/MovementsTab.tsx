@@ -50,7 +50,7 @@ export function MovementsTab() {
   const totalEntries = filteredMovements.filter(m => m.quantity > 0).reduce((a, m) => a + m.quantity, 0);
   const totalExits = Math.abs(filteredMovements.filter(m => m.quantity < 0).reduce((a, m) => a + m.quantity, 0));
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const data = filteredMovements.map(m => ({
       Fecha: new Date(m.created_at).toLocaleString(),
       Tipo: getTypeInfo(m.type).label,

@@ -103,7 +103,7 @@ export function ChairRentalsTab() {
     setIsPaymentOpen(true);
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     const rows = rentals.map((r: any) => ({
       Barbero: r.barbers?.full_name || "-",
       "Silla #": r.chair_number,

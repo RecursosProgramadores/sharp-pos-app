@@ -70,7 +70,7 @@ export function StatsTab() {
     cortes: Number(d.total_sales || 0),
   }));
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     const rows = haircutHistory.map((h) => ({
       Fecha: new Date(h.created_at).toLocaleDateString("es-MX"),
       Hora: new Date(h.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),

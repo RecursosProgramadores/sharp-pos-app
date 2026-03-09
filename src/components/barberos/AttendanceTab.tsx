@@ -121,7 +121,7 @@ export function AttendanceTab() {
     fetchAttendance(selectedDate);
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     const rows = dailyView.map((item) => ({
       Barbero: item.barber.name,
       Estado: statusConfig[item.status as keyof typeof statusConfig]?.label || item.status,

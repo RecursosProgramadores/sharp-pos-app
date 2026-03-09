@@ -82,7 +82,7 @@ export function ProductsTab() {
       }
     });
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const data = filteredProducts.map((p) => ({
       Nombre: p.name,
       SKU: p.sku || "",
