@@ -42,6 +42,7 @@ import { ClientDetailsModal } from "@/components/clientes/ClientDetailsModal";
 import { BirthdayReminders } from "@/components/clientes/BirthdayReminders";
 import { InactiveClients } from "@/components/clientes/InactiveClients";
 import { LoyaltyConfig } from "@/components/clientes/LoyaltyConfig";
+import { CampaignBuilder } from "@/components/clientes/CampaignBuilder";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
 import { levelConfig } from "@/types/client";
