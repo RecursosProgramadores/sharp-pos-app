@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStockMovements, useCreateMovement, useProducts } from "@/hooks/useInventory";
 import { Skeleton } from "@/components/ui/skeleton";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FileSpreadsheet, Download } from "lucide-react";
@@ -50,7 +50,7 @@ export function MovementsTab() {
   const totalEntries = filteredMovements.filter(m => m.quantity > 0).reduce((a, m) => a + m.quantity, 0);
   const totalExits = Math.abs(filteredMovements.filter(m => m.quantity < 0).reduce((a, m) => a + m.quantity, 0));
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const data = filteredMovements.map(m => ({
       Fecha: new Date(m.created_at).toLocaleString(),
       Tipo: getTypeInfo(m.type).label,
@@ -61,10 +61,7 @@ export function MovementsTab() {
       Responsable: m.responsible || "-",
       Motivo: m.reason || "-",
     }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
-    XLSX.writeFile(wb, `Movimientos_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    await exportJsonToExcel(data, "Movimientos", `Movimientos_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const handleExportPDF = () => {

@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import { exportAoaToExcel } from "@/lib/excelExport";
 
 type TableData = { headers: string[]; rows: (string | number)[][] };
 type Section = { title: string; tables: TableData[]; summary?: Record<string, string | number> };
@@ -98,10 +98,8 @@ export function exportToPDF(title: string, sections: Section[], period: string) 
 }
 
 // ── Excel Export ──
-export function exportToExcel(title: string, sections: Section[], period: string) {
-  const wb = XLSX.utils.book_new();
-
-  sections.forEach((section, idx) => {
+export async function exportToExcel(title: string, sections: Section[], period: string) {
+  const sheets = sections.map((section, idx) => {
     const sheetData: (string | number)[][] = [];
 
     // Header info
@@ -125,22 +123,10 @@ export function exportToExcel(title: string, sections: Section[], period: string
     });
 
     const sheetName = section.title.substring(0, 30).replace(/[\\/*?[\]:]/g, "");
-    const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-    // Auto-width columns
-    const colWidths = (sheetData[0] || []).map((_, colIdx) => {
-      const maxLen = sheetData.reduce((max, row) => {
-        const cell = row[colIdx];
-        return Math.max(max, cell != null ? String(cell).length : 0);
-      }, 10);
-      return { wch: Math.min(maxLen + 2, 40) };
-    });
-    ws["!cols"] = colWidths;
-
-    XLSX.utils.book_append_sheet(wb, ws, sheetName || `Hoja${idx + 1}`);
+    return { name: sheetName || `Hoja${idx + 1}`, data: sheetData };
   });
 
-  XLSX.writeFile(wb, `${title.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`);
+  await exportAoaToExcel(sheets, `${title.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`);
 }
 
 // ── Report Data Formatters ──

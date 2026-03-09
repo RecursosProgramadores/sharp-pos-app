@@ -23,7 +23,7 @@ import { NewProductModal } from "./NewProductModal";
 import { ProductDetailsModal } from "./ProductDetailsModal";
 import { useProducts, useDeleteProduct, type Product } from "@/hooks/useInventory";
 import { Skeleton } from "@/components/ui/skeleton";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 
 const categories = ["Todos", "Pomadas", "Shampoos", "Aceites", "Ceras", "Herramientas", "Tintes", "Aftershave", "Cuidado", "Otros", "General"];
 const stockStatuses = ["Todos", "Disponible", "Bajo Stock", "Agotado"];
@@ -82,7 +82,7 @@ export function ProductsTab() {
       }
     });
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const data = filteredProducts.map((p) => ({
       Nombre: p.name,
       SKU: p.sku || "",
@@ -95,10 +95,7 @@ export function ProductsTab() {
       "Stock Mín.": p.min_stock,
       Estado: getProductStatus(p) === "available" ? "Disponible" : getProductStatus(p) === "low_stock" ? "Bajo Stock" : "Agotado",
     }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Productos");
-    XLSX.writeFile(wb, `Inventario_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    await exportJsonToExcel(data, "Productos", `Inventario_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const getStatusBadge = (p: Product) => {

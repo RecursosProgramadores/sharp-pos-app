@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings } from "@/hooks/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel, jsonToCsv } from "@/lib/excelExport";
 
 const defaultSecurity = {
   passwordExpiry: { enabled: true, days: 90 },
@@ -78,17 +78,12 @@ export default function BackupSecurityTab() {
       if (exportFormat === "json") {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         downloadBlob(blob, `${filename}.json`);
-      } else if (exportFormat === "csv" || exportFormat === "excel") {
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, module);
-        if (exportFormat === "csv") {
-          const csv = XLSX.utils.sheet_to_csv(ws);
-          const blob = new Blob([csv], { type: "text/csv" });
-          downloadBlob(blob, `${filename}.csv`);
-        } else {
-          XLSX.writeFile(wb, `${filename}.xlsx`);
-        }
+      } else if (exportFormat === "csv") {
+        const csv = jsonToCsv(data);
+        const blob = new Blob([csv], { type: "text/csv" });
+        downloadBlob(blob, `${filename}.csv`);
+      } else if (exportFormat === "excel") {
+        await exportJsonToExcel(data, module, `${filename}.xlsx`);
       }
 
       toast({ title: "Exportación completada", description: `${module} exportado en formato ${exportFormat.toUpperCase()}` });

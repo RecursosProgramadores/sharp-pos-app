@@ -12,7 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useBarbers } from "@/hooks/useBarbers";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -70,7 +70,7 @@ export function StatsTab() {
     cortes: Number(d.total_sales || 0),
   }));
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     const rows = haircutHistory.map((h) => ({
       Fecha: new Date(h.created_at).toLocaleDateString("es-MX"),
       Hora: new Date(h.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
@@ -79,10 +79,7 @@ export function StatsTab() {
       Monto: `$${h.price}`,
       Pago: h.payment_method,
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Estadísticas");
-    XLSX.writeFile(wb, `Estadisticas_Barberos.xlsx`);
+    await exportJsonToExcel(rows, "Estadísticas", `Estadisticas_Barberos.xlsx`);
   };
 
   const exportPDF = () => {

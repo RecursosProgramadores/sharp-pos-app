@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useBarbers, useChairRentals } from "@/hooks/useBarbers";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -103,7 +103,7 @@ export function ChairRentalsTab() {
     setIsPaymentOpen(true);
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     const rows = rentals.map((r: any) => ({
       Barbero: r.barbers?.full_name || "-",
       "Silla #": r.chair_number,
@@ -113,10 +113,7 @@ export function ChairRentalsTab() {
       Estado: statusConfig[r.status as keyof typeof statusConfig]?.label || r.status,
       Depósito: `$${r.deposit_amount || 0}`,
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Alquileres");
-    XLSX.writeFile(wb, "Alquileres_Sillas.xlsx");
+    await exportJsonToExcel(rows, "Alquileres", "Alquileres_Sillas.xlsx");
   };
 
   const exportPDF = () => {

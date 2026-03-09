@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useBarbers, useBarberAttendance, useBarberSchedules } from "@/hooks/useBarbers";
-import * as XLSX from "xlsx";
+import { exportJsonToExcel } from "@/lib/excelExport";
 
 const statusConfig = {
   present: { label: "Presente", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
@@ -121,7 +121,7 @@ export function AttendanceTab() {
     fetchAttendance(selectedDate);
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     const rows = dailyView.map((item) => ({
       Barbero: item.barber.name,
       Estado: statusConfig[item.status as keyof typeof statusConfig]?.label || item.status,
@@ -130,10 +130,7 @@ export function AttendanceTab() {
       "Horario Programado": item.scheduledStart ? `${item.scheduledStart} - ${item.scheduledEnd}` : "-",
       Notas: item.record?.notes || "",
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
-    XLSX.writeFile(wb, `Asistencia_${selectedDate}.xlsx`);
+    await exportJsonToExcel(rows, "Asistencia", `Asistencia_${selectedDate}.xlsx`);
     toast.success("Excel exportado");
   };
 
