@@ -467,7 +467,7 @@ export function ClientDetailsModal({
                 <div className="space-y-3">
                   <Label>Servicios Favoritos</Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {services.map((service) => (
+                    {dbServices.map((service) => (
                       <div key={service} className="flex items-center space-x-2">
                         <Checkbox
                           id={`edit-${service}`}
