@@ -104,37 +104,7 @@ const spendingData = [
   { month: "Ene", amount: 45 },
 ];
 
-const rewards = [
-  { id: 1, name: "Corte Gratis", points: 50, description: "Un corte clásico gratis" },
-  { id: 2, name: "Combo Especial", points: 100, description: "Corte + Barba gratis" },
-  { id: 3, name: "Tratamiento Premium", points: 150, description: "Tratamiento capilar completo" },
-  { id: 4, name: "Día VIP", points: 200, description: "Todos los servicios con 50% descuento" },
-];
-
-const services = [
-  "Corte Clásico",
-  "Fade",
-  "Barba",
-  "Diseño",
-  "Corte + Barba",
-  "Tratamiento Capilar",
-  "Coloración",
-];
-
-const barbers = [
-  { id: 1, name: "Carlos Mendoza" },
-  { id: 2, name: "Miguel Torres" },
-  { id: 3, name: "Roberto García" },
-  { id: 4, name: "Juan Pérez" },
-];
-
-const pointsHistory = [
-  { date: "2024-01-15", action: "Visita - Corte + Barba", points: 3, type: "earned" },
-  { date: "2024-01-02", action: "Visita - Fade", points: 2, type: "earned" },
-  { date: "2023-12-25", action: "Bonus Navidad", points: 10, type: "earned" },
-  { date: "2023-12-18", action: "Canje - Descuento 10%", points: -20, type: "redeemed" },
-  { date: "2023-12-18", action: "Visita - Corte Clásico", points: 2, type: "earned" },
-];
+// Removed hardcoded rewards and pointsHistory - now fetched from DB
 
 export function ClientDetailsModal({
   client,
