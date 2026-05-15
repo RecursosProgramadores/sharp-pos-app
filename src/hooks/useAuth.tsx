@@ -61,14 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (currentSession?.user) {
           // Use setTimeout to avoid potential deadlock
-          setTimeout(async () => {
+          const loadRole = async () => {
             if (!isMounted) return;
             const userRole = await fetchUserRole(currentSession.user.id);
             if (isMounted) {
               setRole(userRole);
               setLoading(false);
             }
-          }, 0);
+          };
+          loadRole();
         } else {
           setRole(null);
           setLoading(false);

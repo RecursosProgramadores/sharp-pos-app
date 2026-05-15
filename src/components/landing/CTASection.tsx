@@ -42,7 +42,7 @@ export function CTASection({ onReserveClick }: CTASectionProps) {
               size="lg"
               variant="outline"
               className="gap-2 text-lg border-white/30 text-white hover:bg-white/10"
-              onClick={() => window.open("https://wa.me/51987457832", "_blank")}
+              onClick={() => window.open("https://wa.me/51970772564", "_blank")}
             >
               <MessageCircle className="h-5 w-5" />
               WhatsApp

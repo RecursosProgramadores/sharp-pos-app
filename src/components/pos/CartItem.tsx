@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Minus, X, Scissors, Package, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 interface CartItemProps {
   item: {
@@ -19,13 +20,21 @@ interface CartItemProps {
 }
 
 export function CartItem({ item, barbers, onUpdateQuantity, onRemove, onBarberChange }: CartItemProps) {
+  const [isHighlighted, setIsHighlighted] = useState(false);
   const subtotal = item.price * item.quantity;
   const needsBarber = item.type === "service" && !item.barberId;
   const assignedBarber = item.barberId ? barbers.find(b => b.id === item.barberId) : null;
 
+  useEffect(() => {
+    setIsHighlighted(true);
+    const timer = setTimeout(() => setIsHighlighted(false), 800);
+    return () => clearTimeout(timer);
+  }, [item.quantity]);
+
   return (
     <div className={cn(
       "relative p-2.5 rounded-xl border transition-all duration-200",
+      isHighlighted && "animate-highlight ring-2 ring-primary/20",
       needsBarber
         ? "border-destructive/40 bg-destructive/5"
         : "border-border/40 bg-muted/30 hover:bg-muted/50"

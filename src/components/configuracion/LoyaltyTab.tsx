@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Gift, Star, Plus, Trash2, Users, Calendar, Clock, Save, Loader2 } from "lucide-react";
+import { Gift, Star, Plus, Trash2, Users, Calendar, Clock, Save, Loader2, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ const defaultLoyalty = {
   referralPoints: 25,
   birthdayDiscount: 15,
   firstVisitDiscount: 10,
+  sixthCutDiscount: { enabled: true, discount: 25, visitsRequired: 5 },
   happyHour: { enabled: true, discount: 20, days: ["tuesday", "wednesday"], start: "14:00", end: "17:00" },
   rewards: [
     { id: "r1", name: "Corte Gratis", pointsRequired: 50, description: "Un corte clásico completamente gratis", active: true },
@@ -47,7 +48,14 @@ export default function LoyaltyTab() {
   const [newReward, setNewReward] = useState({ name: "", pointsRequired: 0, description: "" });
 
   useEffect(() => {
-    if (saved) setConfig({ ...defaultLoyalty, ...saved, happyHour: { ...defaultLoyalty.happyHour, ...(saved as any).happyHour } });
+    if (saved) {
+      setConfig({ 
+        ...defaultLoyalty, 
+        ...saved, 
+        sixthCutDiscount: { ...defaultLoyalty.sixthCutDiscount, ...(saved as any).sixthCutDiscount },
+        happyHour: { ...defaultLoyalty.happyHour, ...(saved as any).happyHour } 
+      });
+    }
   }, [saved]);
 
   const handleCreateReward = () => {
@@ -134,52 +142,36 @@ export default function LoyaltyTab() {
             </CardContent>
           </Card>
 
-          {/* Rewards */}
-          <Card className="card-elevated">
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <CardTitle className="font-display text-xl flex items-center gap-2"><Gift className="h-5 w-5 text-primary" />Recompensas Canjeables</CardTitle>
-                  <CardDescription>Premios que los clientes pueden canjear</CardDescription>
-                </div>
-                <Dialog open={isNewRewardOpen} onOpenChange={setIsNewRewardOpen}>
-                  <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" />Nueva Recompensa</Button></DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader><DialogTitle>Crear Nueva Recompensa</DialogTitle></DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2"><Label>Nombre</Label><Input value={newReward.name} onChange={(e) => setNewReward({ ...newReward, name: e.target.value })} placeholder="Ej: Corte Gratis" /></div>
-                      <div className="space-y-2"><Label>Puntos Requeridos</Label><Input type="number" value={newReward.pointsRequired} onChange={(e) => setNewReward({ ...newReward, pointsRequired: parseInt(e.target.value) || 0 })} /></div>
-                      <div className="space-y-2"><Label>Descripción</Label><Textarea value={newReward.description} onChange={(e) => setNewReward({ ...newReward, description: e.target.value })} rows={2} /></div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsNewRewardOpen(false)}>Cancelar</Button>
-                      <Button onClick={handleCreateReward}>Guardar</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader><TableRow><TableHead>Recompensa</TableHead><TableHead className="text-center">Puntos</TableHead><TableHead className="text-center">Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {config.rewards.map(reward => (
-                    <TableRow key={reward.id} className={!reward.active ? "opacity-50" : ""}>
-                      <TableCell><div><p className="font-medium">{reward.name}</p><p className="text-sm text-muted-foreground">{reward.description}</p></div></TableCell>
-                      <TableCell className="text-center"><Badge variant="secondary"><Star className="h-3 w-3 mr-1" />{reward.pointsRequired}</Badge></TableCell>
-                      <TableCell className="text-center"><Switch checked={reward.active} onCheckedChange={() => handleToggleReward(reward.id)} /></TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteReward(reward.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
           {/* Special Promotions */}
           <Card className="card-elevated">
             <CardHeader><CardTitle className="font-display text-xl flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" />Promociones Especiales</CardTitle></CardHeader>
             <CardContent className="space-y-4">
+              
+              {/* 6th cut discount */}
+              <div className="p-4 border rounded-lg space-y-4 bg-primary/5 border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center"><Scissors className="h-5 w-5 text-primary" /></div>
+                    <div><p className="font-medium text-primary">Descuento de Cortes Frecuentes</p><p className="text-sm text-muted-foreground">Avisa en el POS cuando el cliente llega a la visita con descuento (ej: Por 5 cortes, el 6to tiene descuento)</p></div>
+                  </div>
+                  <Switch checked={config.sixthCutDiscount.enabled} onCheckedChange={(v) => setConfig(prev => ({ ...prev, sixthCutDiscount: { ...prev.sixthCutDiscount, enabled: v } }))} />
+                </div>
+                {config.sixthCutDiscount.enabled && (
+                  <div className="space-y-4 pt-4 border-t border-primary/20 flex flex-wrap gap-6">
+                    <div className="flex items-center gap-2">
+                      <Label>Visitas requeridas:</Label>
+                      <Input type="number" className="w-20" value={config.sixthCutDiscount.visitsRequired} onChange={(e) => setConfig(prev => ({ ...prev, sixthCutDiscount: { ...prev.sixthCutDiscount, visitsRequired: parseInt(e.target.value) || 5 } }))} />
+                      <span className="text-sm text-muted-foreground">cortes</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label>Descuento aplicado:</Label>
+                      <Input type="number" className="w-20" value={config.sixthCutDiscount.discount} onChange={(e) => setConfig(prev => ({ ...prev, sixthCutDiscount: { ...prev.sixthCutDiscount, discount: parseInt(e.target.value) || 25 } }))} />
+                      <span className="text-sm">%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-secondary/20 flex items-center justify-center">🎂</div>
@@ -237,6 +229,48 @@ export default function LoyaltyTab() {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+          
+          {/* Rewards */}
+          <Card className="card-elevated">
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle className="font-display text-xl flex items-center gap-2"><Gift className="h-5 w-5 text-primary" />Recompensas Canjeables</CardTitle>
+                  <CardDescription>Premios que los clientes pueden canjear</CardDescription>
+                </div>
+                <Dialog open={isNewRewardOpen} onOpenChange={setIsNewRewardOpen}>
+                  <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" />Nueva Recompensa</Button></DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Crear Nueva Recompensa</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2"><Label>Nombre</Label><Input value={newReward.name} onChange={(e) => setNewReward({ ...newReward, name: e.target.value })} placeholder="Ej: Corte Gratis" /></div>
+                      <div className="space-y-2"><Label>Puntos Requeridos</Label><Input type="number" value={newReward.pointsRequired} onChange={(e) => setNewReward({ ...newReward, pointsRequired: parseInt(e.target.value) || 0 })} /></div>
+                      <div className="space-y-2"><Label>Descripción</Label><Textarea value={newReward.description} onChange={(e) => setNewReward({ ...newReward, description: e.target.value })} rows={2} /></div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsNewRewardOpen(false)}>Cancelar</Button>
+                      <Button onClick={handleCreateReward}>Guardar</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader><TableRow><TableHead>Recompensa</TableHead><TableHead className="text-center">Puntos</TableHead><TableHead className="text-center">Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {config.rewards.map(reward => (
+                    <TableRow key={reward.id} className={!reward.active ? "opacity-50" : ""}>
+                      <TableCell><div><p className="font-medium">{reward.name}</p><p className="text-sm text-muted-foreground">{reward.description}</p></div></TableCell>
+                      <TableCell className="text-center"><Badge variant="secondary"><Star className="h-3 w-3 mr-1" />{reward.pointsRequired}</Badge></TableCell>
+                      <TableCell className="text-center"><Switch checked={reward.active} onCheckedChange={() => handleToggleReward(reward.id)} /></TableCell>
+                      <TableCell className="text-right"><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteReward(reward.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </>

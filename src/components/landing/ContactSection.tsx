@@ -56,7 +56,7 @@ export function ContactSection() {
               <Button
                 size="lg"
                 className="flex-1 gap-2 bg-success hover:bg-success/90"
-                onClick={() => window.open("https://wa.me/51987457832", "_blank")}
+                onClick={() => window.open("https://wa.me/51970772564", "_blank")}
               >
                 <MessageCircle className="h-5 w-5" />
                 WhatsApp
@@ -78,7 +78,7 @@ export function ContactSection() {
                 <h4 className="font-display text-lg mb-2">WhatsApp</h4>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Phone className="h-4 w-4" />
-                  <span>987 457 832</span>
+                  <span>970 772 564</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Reservas y consultas

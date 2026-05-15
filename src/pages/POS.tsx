@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Search,
   Trash2,
@@ -20,6 +21,7 @@ import {
   ArrowRight,
   X,
   Star,
+  Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,8 +50,32 @@ import { ThermalReceipt } from "@/components/pos/ThermalReceipt";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSettings } from "@/hooks/useSettings";
 import { sendSaleReceipt } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/security";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+
+const playBeep = () => {
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.01);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.12);
+  } catch (e) {
+    console.error("Audio error", e);
+  }
+};
 
 interface CartItemType {
   id: string;
@@ -83,7 +109,9 @@ export default function POS() {
   const [tipPercent, setTipPercent] = useState<number | null>(null);
   const [customTip, setCustomTip] = useState("");
   const [isStudent, setIsStudent] = useState(false);
-  const [ticketNumber] = useState(() => `T-${String(Math.floor(Math.random() * 9000) + 1000)}`);
+  const generateTicketNumber = () => `T-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const { user, role } = useAuth();
+  const [ticketNumber, setTicketNumber] = useState(generateTicketNumber());
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeReservationId, setActiveReservationId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("services");
@@ -97,6 +125,7 @@ export default function POS() {
 
   // Saved sales (local state)
   const [savedSales, setSavedSales] = useState<SavedSale[]>([]);
+  const [cartAnimate, setCartAnimate] = useState(false);
 
   // Fetch real services
   const { data: services = [] } = useQuery({
@@ -156,18 +185,11 @@ export default function POS() {
     },
   });
 
-  // Fetch loyalty config for points calculation
-  const { data: loyaltyConfig } = useQuery({
-    queryKey: ["business-settings", "loyalty"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("business_settings")
-        .select("setting_value")
-        .eq("setting_key", "loyalty")
-        .single();
-      if (error) return null;
-      return data?.setting_value as { enabled?: boolean; pointsPerDollar?: number } | null;
-    },
+  // Fetch loyalty config – useSettings guarantees defaults even if DB row is missing
+  const { data: loyaltyConfig } = useSettings("loyalty", {
+    enabled: true,
+    pointsPerDollar: 10,
+    sixthCutDiscount: { enabled: true, discount: 25, visitsRequired: 5 },
   });
 
   // Fetch today's pending/confirmed reservations
@@ -227,19 +249,39 @@ export default function POS() {
         type: "service" as const,
       }];
     });
+    setCartAnimate(true);
+    setTimeout(() => setCartAnimate(false), 300);
     toast({ title: "Servicio agregado", description: service.name });
   };
 
   const addProduct = (product: typeof products[0], quantity: number) => {
+    let limitReached = false;
+    
     setCart((prev) => {
       const existing = prev.find((i) => i.id === product.id && i.type === "product");
+      
+      const currentQty = existing ? existing.quantity : 0;
+      const newTotalQty = currentQty + quantity;
+      
+      // Stock validation
+      if (newTotalQty > product.stock) {
+        limitReached = true;
+        return prev;
+      }
+
       if (existing) {
+        toast({ 
+          title: "Cantidad actualizada", 
+          description: `${product.name}: ${newTotalQty} unidades`,
+        });
         return prev.map((i) =>
           i.id === product.id && i.type === "product"
-            ? { ...i, quantity: i.quantity + quantity }
+            ? { ...i, quantity: newTotalQty }
             : i
         );
       }
+      
+      toast({ title: "Producto agregado", description: `${product.name} x${quantity}` });
       return [...prev, {
         id: product.id,
         name: product.name,
@@ -248,8 +290,40 @@ export default function POS() {
         type: "product" as const,
       }];
     });
-    toast({ title: "Producto agregado", description: `${product.name} x${quantity}` });
+
+    if (limitReached) {
+      toast({
+        title: "Stock insuficiente",
+        description: `Solo hay ${product.stock} unidades disponibles de ${product.name}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCartAnimate(true);
+    setTimeout(() => setCartAnimate(false), 300);
   };
+
+  const handleBarcodeScan = useCallback((code: string) => {
+    if (!products || !code) return;
+
+    const matchedProduct = products.find(
+      (p) => p.barcode === code || p.sku === code
+    );
+
+    if (matchedProduct) {
+      addProduct(matchedProduct, 1);
+      playBeep();
+    } else {
+      toast({
+        title: "Producto no encontrado",
+        description: `El código "${code}" no coincide con ningún producto.`,
+        variant: "destructive",
+      });
+    }
+  }, [products, addProduct]);
+
+  useBarcodeScanner({ onScan: handleBarcodeScan });
 
   const updateQuantity = (id: string, type: "service" | "product", delta: number) => {
     setCart((prev) =>
@@ -285,6 +359,7 @@ export default function POS() {
     setIsStudent(false);
     setSelectedClient("walk-in");
     setActiveReservationId(null);
+    setTicketNumber(generateTicketNumber());
   };
 
   // Load reservation into cart
@@ -476,6 +551,11 @@ export default function POS() {
         ? barbers.find(b => b.id === servicesInCartItems[0].barberId)?.full_name 
         : undefined;
 
+      // Refined cashier name logic
+      const cashierName = role === 'admin' 
+        ? "Administrador" 
+        : (primaryBarberName || user?.user_metadata?.full_name || user?.email || "Cajero");
+
       // Print receipt if option selected
       if (details.printReceipt) {
         setPrintReceiptData({
@@ -490,7 +570,7 @@ export default function POS() {
           change: details.change,
           clientName,
           clientPhone,
-          barberName: primaryBarberName,
+          barberName: cashierName,
         });
       }
 
@@ -522,6 +602,7 @@ export default function POS() {
 
       clearCart();
       setShowPaymentModal(false);
+      setTicketNumber(generateTicketNumber());
       toast({
         title: "¡Venta completada!",
         description: `Ticket ${ticketNumber} — ${clientName} — S/ ${total.toFixed(2)}`,
@@ -563,6 +644,44 @@ export default function POS() {
       c.full_name.toLowerCase().includes(term) || c.phone.includes(term)
     ).slice(0, 8);
   }, [clients, clientSearchTerm]);
+
+  const isFrequentCutEligible = useMemo(() => {
+    if (!selectedClientData) return false;
+    const cfg = loyaltyConfig?.sixthCutDiscount;
+    const enabled     = cfg?.enabled ?? true;
+    const req         = Math.max(1, Number(cfg?.visitsRequired) || 5);
+    const visits      = Number(selectedClientData.visits) || 0;
+    // After req regular cuts, the next (req+1)-th cut is discounted
+    return enabled && visits > 0 && visits % (req + 1) === req;
+  }, [selectedClientData, loyaltyConfig]);
+
+  const discountPercent = Math.max(1, Number(loyaltyConfig?.sixthCutDiscount?.discount) || 25);
+  const visitsRequired  = Math.max(1, Number(loyaltyConfig?.sixthCutDiscount?.visitsRequired) || 5);
+
+  const applyFrequentCutDiscount = () => {
+    if (!isFrequentCutEligible || cart.length === 0) return;
+    
+    
+    const servicesSubtotal = cart
+      .filter(item => item.type === "service")
+      .reduce((acc, item) => acc + item.price * item.quantity, 0);
+      
+    if (servicesSubtotal > 0) {
+      const discountAmount = servicesSubtotal * (discountPercent / 100);
+      setDiscountType("fixed");
+      setDiscountValue(discountAmount.toString());
+      toast({
+        title: "Descuento Aplicado",
+        description: `Se aplicó un descuento de S/ ${discountAmount.toFixed(2)} (${discountPercent}% en servicios) por cliente frecuente.`
+      });
+    } else {
+      toast({
+        title: "No aplicable",
+        description: "Agrega al menos un servicio para aplicar el descuento.",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <div className="h-[calc(100vh-4rem)] flex gap-2 p-1 overflow-hidden">
@@ -671,6 +790,12 @@ export default function POS() {
                   className="pl-7 h-7 text-xs"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchTerm) {
+                      handleBarcodeScan(searchTerm);
+                      setSearchTerm("");
+                    }
+                  }}
                 />
               </div>
               <Button variant="outline" size="sm" className="h-7 gap-1 shrink-0 px-2">
@@ -734,8 +859,8 @@ export default function POS() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-1.5 pb-1">
                   {todayReservations.map((reservation) => {
-                    const svc = reservation.service as any;
-                    const barber = reservation.barber as any;
+                    const svc = reservation.service as unknown as { name?: string; price?: number };
+                    const barber = reservation.barber as unknown as { full_name?: string };
                     const isActive = activeReservationId === reservation.id;
                     return (
                       <button
@@ -802,7 +927,10 @@ export default function POS() {
         {/* Cart Header - sticky top */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+            <div className={cn(
+              "h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center transition-transform duration-200",
+              cartAnimate && "scale-125 animate-bounce"
+            )}>
               <ShoppingCart className="h-3.5 w-3.5 text-primary" />
             </div>
             <div>
@@ -826,6 +954,7 @@ export default function POS() {
         <div className="px-3 py-2 border-b border-border/40 shrink-0 relative">
           <label className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5 block">Cliente</label>
           {selectedClientData ? (
+            <>
             <div className="flex items-center gap-2 p-1.5 rounded-lg border border-primary/30 bg-primary/5">
               <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 {selectedClientData.level === "vip" ? (
@@ -856,6 +985,21 @@ export default function POS() {
                 <X className="h-2.5 w-2.5" />
               </Button>
             </div>
+            {isFrequentCutEligible && (
+              <div className="mt-2 bg-primary/10 border border-primary/20 rounded-md p-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Gift className="h-3.5 w-3.5 text-primary" />
+                  <div>
+                    <p className="text-[10px] font-bold text-primary leading-tight">¡{visitsRequired + 1}to Corte!</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">Aplica {discountPercent}% dcto</p>
+                  </div>
+                </div>
+                <Button size="sm" variant="default" className="h-6 text-[9px] px-2" onClick={applyFrequentCutDiscount}>
+                  Aplicar
+                </Button>
+              </div>
+            )}
+          </>
           ) : (
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />

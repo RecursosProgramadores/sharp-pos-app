@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateProduct, uploadProductImage } from "@/hooks/useInventory";
+import { toast } from "sonner";
 
 interface NewProductModalProps {
   open: boolean;
@@ -50,6 +51,12 @@ export function NewProductModal({ open, onOpenChange }: NewProductModalProps) {
     setFormData({ ...formData, sku: `PRD-${random}` });
   };
 
+  const generateBarcode = () => {
+    // Generate a 13-digit random numeric barcode
+    const random = Math.floor(Math.random() * 9000000000000) + 1000000000000;
+    setFormData({ ...formData, barcode: random.toString() });
+  };
+
   const calculateMargin = () => {
     const cost = parseFloat(formData.costPrice) || 0;
     const sale = parseFloat(formData.salePrice) || 0;
@@ -74,7 +81,16 @@ export function NewProductModal({ open, onOpenChange }: NewProductModalProps) {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.salePrice) return;
+    let finalBarcode = formData.barcode;
+    if (!finalBarcode) {
+      finalBarcode = Math.floor(Math.random() * 9000000000000 + 1000000000000).toString();
+      toast.info(`Se generó un código de barras automático: ${finalBarcode}`);
+    }
+
+    if (!formData.name || !formData.salePrice) {
+      toast.error("El nombre y precio de venta son obligatorios");
+      return;
+    }
     setSaving(true);
     try {
       let photoUrl: string | undefined;
@@ -85,7 +101,7 @@ export function NewProductModal({ open, onOpenChange }: NewProductModalProps) {
       await createProduct.mutateAsync({
         name: formData.name,
         sku: formData.sku || undefined,
-        barcode: formData.barcode || undefined,
+        barcode: finalBarcode,
         category: formData.category || "Otros",
         description: formData.description || undefined,
         stock: parseInt(formData.initialStock) || 0,
@@ -130,9 +146,12 @@ export function NewProductModal({ open, onOpenChange }: NewProductModalProps) {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="barcode">Código de Barras</Label>
-                <Input id="barcode" placeholder="7501234567890" value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })} />
+                <Label htmlFor="barcode">Código de Barras *</Label>
+                <div className="flex gap-2">
+                  <Input id="barcode" placeholder="7501234567890" value={formData.barcode}
+                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })} />
+                  <Button type="button" variant="outline" onClick={generateBarcode}>Generar</Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Categoría</Label>

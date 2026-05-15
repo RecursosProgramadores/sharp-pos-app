@@ -25,6 +25,8 @@ export function ProductDetailsModal({ open, onOpenChange, product }: ProductDeta
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editCost, setEditCost] = useState("");
+  const [editBarcode, setEditBarcode] = useState("");
+  const [editSku, setEditSku] = useState("");
 
   if (!product) return null;
 
@@ -39,9 +41,32 @@ export function ProductDetailsModal({ open, onOpenChange, product }: ProductDeta
     if (editName && editName !== product.name) updates.name = editName;
     if (editPrice && parseFloat(editPrice) !== product.sale_price) updates.sale_price = parseFloat(editPrice);
     if (editCost && parseFloat(editCost) !== product.purchase_price) updates.purchase_price = parseFloat(editCost);
+    
+    let finalBarcode = editBarcode || product.barcode;
+    if (!finalBarcode) {
+      finalBarcode = Math.floor(Math.random() * 9000000000000 + 1000000000000).toString();
+      updates.barcode = finalBarcode;
+      setEditBarcode(finalBarcode);
+      toast.info(`Se generó un código de barras automático: ${finalBarcode}`);
+    } else if (editBarcode && editBarcode !== product.barcode) {
+      updates.barcode = editBarcode;
+    }
+
+    if (editSku && editSku !== product.sku) updates.sku = editSku;
+
     if (Object.keys(updates).length > 0) {
       updateProduct.mutate({ id: product.id, ...updates });
     }
+  };
+
+  const generateBarcode = () => {
+    const random = Math.floor(Math.random() * 9000000000000) + 1000000000000;
+    setEditBarcode(random.toString());
+  };
+
+  const generateSKU = () => {
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setEditSku(`PRD-${random}`);
   };
 
   const handleAdjust = async () => {
@@ -138,6 +163,20 @@ export function ProductDetailsModal({ open, onOpenChange, product }: ProductDeta
               <div className="space-y-2">
                 <Label>Precio de Venta</Label>
                 <Input type="number" defaultValue={product.sale_price} onChange={(e) => setEditPrice(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Código de Barras *</Label>
+                <div className="flex gap-2">
+                  <Input value={editBarcode || product.barcode || ""} onChange={(e) => setEditBarcode(e.target.value)} />
+                  <Button type="button" variant="outline" size="sm" onClick={generateBarcode}>Generar</Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>SKU</Label>
+                <div className="flex gap-2">
+                  <Input value={editSku || product.sku || ""} onChange={(e) => setEditSku(e.target.value)} />
+                  <Button type="button" variant="outline" size="sm" onClick={generateSKU}>Generar</Button>
+                </div>
               </div>
             </div>
             <div className="flex justify-end">

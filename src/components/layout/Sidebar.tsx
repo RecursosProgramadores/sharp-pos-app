@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import Logo from "@/assets/logotayta.png";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
@@ -54,21 +55,29 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300 ease-in-out",
+        "fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300 ease-in-out border-r border-sidebar-border",
         collapsed ? "w-20" : "w-64"
       )}
     >
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-            <Scissors className="h-6 w-6 text-primary-foreground" />
+      {/* Logo Section */}
+      <div className="flex h-20 items-center px-4 border-b border-sidebar-border bg-[#0a0a0a]">
+        <div className={cn(
+          "flex items-center gap-3 transition-all duration-300 overflow-hidden",
+          collapsed ? "justify-center w-full" : "w-full"
+        )}>
+          <div className={cn(
+            "relative transition-all duration-500",
+            collapsed ? "w-10 h-10" : "w-48"
+          )}>
+            <img 
+              src={Logo} 
+              alt="Tayta BarberShop Logo" 
+              className={cn(
+                "w-full h-full object-contain transition-all duration-500",
+                collapsed ? "scale-150" : "scale-100"
+              )}
+            />
           </div>
-          {!collapsed && (
-            <span className="font-display text-xl text-sidebar-foreground tracking-wider">
-              BARBER PRO
-            </span>
-          )}
         </div>
       </div>
 

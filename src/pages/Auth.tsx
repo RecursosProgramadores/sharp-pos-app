@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Scissors, Loader2, Eye, EyeOff, ShieldCheck, ShoppingCart, AlertTriangle } from "lucide-react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { Loader2, Eye, EyeOff, ShieldCheck, ShoppingCart, AlertTriangle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { isRateLimited, getRateLimitRemainingSeconds, sanitizeInput } from "@/lib/security";
+import Logo from "@/assets/logotayta.png";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255),
@@ -26,6 +26,7 @@ export default function Auth() {
   const [selectedRole, setSelectedRole] = useState<RoleType | null>(null);
   const { user, signIn, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!loading && user) {
@@ -33,10 +34,17 @@ export default function Auth() {
     }
   }, [user, loading, navigate]);
 
+  useEffect(() => {
+    const state = location.state as { error?: string } | undefined;
+    if (state?.error) {
+      toast.error(state.error);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
 
-  // Check lockout timer
   useEffect(() => {
     if (!lockoutUntil) return;
     const interval = setInterval(() => {
@@ -59,7 +67,6 @@ export default function Auth() {
       return;
     }
 
-    // Rate limiting - brute force protection
     if (isRateLimited('login', 5, 120000)) {
       const remaining = getRateLimitRemainingSeconds('login');
       setLockoutUntil(Date.now() + remaining * 1000);
@@ -82,7 +89,6 @@ export default function Auth() {
       
       if (error) {
         setLoginAttempts(prev => prev + 1);
-        // Generic error message - don't reveal if email exists
         if (error.message.includes("Invalid login credentials")) {
           toast.error("Credenciales incorrectas. Verifica tus datos.");
         } else if (error.message.includes("Email not confirmed")) {
@@ -91,9 +97,8 @@ export default function Auth() {
           toast.error("Error al iniciar sesión. Intenta nuevamente.");
         }
         
-        // Lock out after 5 failed attempts
         if (loginAttempts + 1 >= 5) {
-          setLockoutUntil(Date.now() + 120000); // 2 min lockout
+          setLockoutUntil(Date.now() + 120000);
         }
         return;
       }
@@ -110,106 +115,143 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo Header */}
-        <div className="text-center space-y-4">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl gradient-primary shadow-xl">
-            <Scissors className="h-10 w-10 text-primary-foreground" />
+    <div className="min-h-screen flex w-full bg-[#050505] text-white font-sans selection:bg-amber-500/30">
+      {/* Left Pane - Image */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-zinc-900 overflow-hidden">
+        <div className="absolute inset-0 bg-black/40 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#050505] z-10" />
+        <img 
+          src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80" 
+          alt="Barbershop" 
+          className="w-full h-full object-cover opacity-80"
+        />
+        <div className="absolute bottom-16 left-16 z-20 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-amber-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+            Sistema Profesional
           </div>
-          <div>
-            <h1 className="font-display text-4xl tracking-wider text-foreground">BARBER PRO</h1>
-            <p className="text-muted-foreground mt-1">Sistema de Gestión para Barberías</p>
-          </div>
+          <h2 className="text-4xl xl:text-6xl font-black tracking-tighter uppercase leading-[0.9] text-white mb-6">
+            La Herramienta <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-500 to-amber-700">Definitiva</span>
+          </h2>
+          <p className="text-zinc-400 font-light text-lg">
+            Gestiona tu barbería con precisión, elegancia y tecnología de vanguardia.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Pane - Login */}
+      <div className="w-full lg:w-1/2 flex flex-col relative py-12 px-6 sm:px-12 xl:px-24 justify-center items-center">
+        {/* Back Button */}
+        <div className="absolute top-8 left-8 sm:left-12 xl:left-16">
+          <Link 
+            to="/" 
+            className="flex items-center gap-2 text-zinc-500 hover:text-amber-500 transition-colors text-xs font-bold uppercase tracking-widest group"
+          >
+            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            Volver a la página
+          </Link>
         </div>
 
-        {/* Role Selection */}
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={() => setSelectedRole("admin")}
-            className={cn(
-              "relative flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all duration-200",
-              selectedRole === "admin"
-                ? "border-primary bg-primary/10 shadow-lg"
-                : "border-border bg-card hover:border-primary/50 hover:bg-muted/50"
-            )}
-          >
-            <div className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-full transition-colors",
-              selectedRole === "admin" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            )}>
-              <ShieldCheck className="h-7 w-7" />
+        <div className="w-full max-w-[420px] space-y-10 mt-8">
+          {/* Logo Header */}
+          <div className="text-center space-y-6">
+            <div className="mx-auto w-64 md:w-72 h-auto flex justify-center mb-2">
+              <img 
+                src={Logo} 
+                alt="Tayta BarberShop" 
+                className="w-full h-auto object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.2)]" 
+              />
             </div>
-            <div className="text-center">
-              <p className="font-semibold text-foreground">Administrador</p>
-              <p className="text-xs text-muted-foreground mt-1">Acceso completo</p>
+            <div>
+              <h1 className="font-display text-3xl font-black tracking-widest text-white uppercase">BARBER PRO</h1>
+              <p className="text-zinc-500 mt-2 text-[10px] font-bold uppercase tracking-[0.25em]">Sistema de Gestión para Barberías</p>
             </div>
-            {selectedRole === "admin" && (
-              <div className="absolute top-2 right-2 h-3 w-3 rounded-full bg-primary" />
-            )}
-          </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setSelectedRole("cajero")}
-            className={cn(
-              "relative flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all duration-200",
-              selectedRole === "cajero"
-                ? "border-secondary bg-secondary/10 shadow-lg"
-                : "border-border bg-card hover:border-secondary/50 hover:bg-muted/50"
-            )}
-          >
-            <div className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-full transition-colors",
-              selectedRole === "cajero" ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"
-            )}>
-              <ShoppingCart className="h-7 w-7" />
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-foreground">Cajero</p>
-              <p className="text-xs text-muted-foreground mt-1">Acceso operativo</p>
-            </div>
-            {selectedRole === "cajero" && (
-              <div className="absolute top-2 right-2 h-3 w-3 rounded-full bg-secondary" />
-            )}
-          </button>
-        </div>
+          {/* Role Selection */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedRole("admin")}
+              className={cn(
+                "relative flex items-center text-left gap-3 p-4 rounded-xl border transition-all duration-300 overflow-hidden group",
+                selectedRole === "admin"
+                  ? "border-amber-500 bg-amber-500/10 shadow-[0_0_30px_rgba(245,158,11,0.15)]"
+                  : "border-white/10 bg-white/5 hover:border-amber-500/50 hover:bg-white/10"
+              )}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-300 relative z-10",
+                selectedRole === "admin" ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" : "bg-white/5 text-zinc-400"
+              )}>
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="relative z-10 flex-1 min-w-0">
+                <p className={cn("font-black tracking-tight text-xs uppercase truncate", selectedRole === "admin" ? "text-amber-500" : "text-white")}>Admin</p>
+                <p className="text-[9px] font-medium text-zinc-500 uppercase tracking-widest mt-0.5 truncate">Completo</p>
+              </div>
+            </button>
 
-        {/* Login Form */}
-        <Card className="shadow-xl border-border/50">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Iniciar Sesión</CardTitle>
-            <CardDescription>
-              {selectedRole 
-                ? `Ingresa como ${selectedRole === "admin" ? "Administrador" : "Cajero"}`
-                : "Selecciona tu tipo de acceso arriba"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setSelectedRole("cajero")}
+              className={cn(
+                "relative flex items-center text-left gap-3 p-4 rounded-xl border transition-all duration-300 overflow-hidden group",
+                selectedRole === "cajero"
+                  ? "border-zinc-300 bg-zinc-300/10 shadow-[0_0_30px_rgba(212,212,216,0.15)]"
+                  : "border-white/10 bg-white/5 hover:border-zinc-300/50 hover:bg-white/10"
+              )}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-zinc-300/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-300 relative z-10",
+                selectedRole === "cajero" ? "bg-zinc-200 text-black shadow-lg shadow-zinc-200/20" : "bg-white/5 text-zinc-400"
+              )}>
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+              <div className="relative z-10 flex-1 min-w-0">
+                <p className={cn("font-black tracking-tight text-xs uppercase truncate", selectedRole === "cajero" ? "text-zinc-200" : "text-white")}>Cajero</p>
+                <p className="text-[9px] font-medium text-zinc-500 uppercase tracking-widest mt-0.5 truncate">Operativo</p>
+              </div>
+            </button>
+          </div>
+
+          {/* Login Form */}
+          <div className="bg-white/[0.02] border border-white/5 p-8 rounded-[2rem] shadow-2xl backdrop-blur-sm">
+            <div className="mb-8">
+              <h3 className="text-xl font-black text-white tracking-tight">Iniciar Sesión</h3>
+              <p className="text-zinc-500 text-sm mt-1">
+                {selectedRole 
+                  ? `Ingresa como ${selectedRole === "admin" ? "Administrador" : "Cajero"}`
+                  : "Selecciona tu tipo de acceso arriba"}
+              </p>
+            </div>
+            
+            <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email">Correo electrónico</Label>
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-zinc-400">Correo electrónico</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="correo@ejemplo.com"
+                  placeholder="admin@tayta.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
                   autoComplete="email"
-                  className="h-11"
+                  className="h-14 bg-[#050505] border-white/10 text-white rounded-xl px-4 focus:border-amber-500 transition-colors"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-zinc-400">Contraseña</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -219,50 +261,51 @@ export default function Auth() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
                     autoComplete="current-password"
-                    className="h-11 pr-10"
+                    className="h-14 bg-[#050505] border-white/10 text-white rounded-xl px-4 pr-12 focus:border-amber-500 transition-colors"
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
               {isLockedOut && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                  <p className="text-sm text-destructive">
-                    Cuenta bloqueada temporalmente. Espera {lockoutRemaining}s
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+                  <p className="text-sm text-red-500 font-medium">
+                    Cuenta bloqueada. Espera {lockoutRemaining}s
                   </p>
                 </div>
               )}
               <Button 
                 type="submit" 
-                className="w-full h-11 text-base font-medium" 
-                size="lg" 
+                className={cn(
+                  "w-full h-14 text-sm font-black uppercase tracking-widest rounded-xl transition-all duration-300",
+                  selectedRole === "admin" ? "bg-amber-500 hover:bg-amber-600 text-black shadow-[0_0_20px_rgba(245,158,11,0.2)]" : 
+                  selectedRole === "cajero" ? "bg-zinc-200 hover:bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.1)]" : 
+                  "bg-white/5 text-zinc-500 cursor-not-allowed"
+                )}
                 disabled={isLoading || !selectedRole || !!isLockedOut}
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Ingresando...
-                  </>
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Procesando...
+                  </span>
                 ) : (
-                  "Iniciar Sesión"
+                  "Acceder al Sistema"
                 )}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground">
-          © 2026 Barber Pro. Sistema de Gestión.
-        </p>
+          <p className="text-center text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">
+            © {new Date().getFullYear()} TAYTA BARBERSHOP
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Printer, QrCode, FileText, Save, TestTube, Loader2,
+  Printer, QrCode, FileText, Save, TestTube, Loader2, Upload, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ const defaultPrinting = {
     headerText: "TAYTA BARBERSHOP",
     footerText: "¡Gracias por tu visita!\nVuelve pronto",
     includeQR: true,
-    qrUrl: "",
+    qrImageUrl: "",
     includeFiscalData: true,
     fontSize: "medium",
   },
@@ -66,6 +66,21 @@ export default function PrintingTab() {
   };
 
   const handleSave = () => save(config);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setConfig(prev => ({
+          ...prev,
+          receipt: { ...prev.receipt, qrImageUrl: reader.result as string }
+        }));
+        toast({ title: "Imagen cargada", description: "El código QR ha sido actualizado." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   if (isLoading) return <div className="space-y-6">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>;
 
@@ -145,12 +160,47 @@ export default function PrintingTab() {
               <Switch checked={config.receipt.includeQR} onCheckedChange={(v) => setConfig(prev => ({ ...prev, receipt: { ...prev.receipt, includeQR: v } }))} />
             </div>
             {config.receipt.includeQR && (
-              <div className="space-y-2">
-                <Label>URL del Código QR</Label>
-                <Input value={config.receipt.qrUrl} onChange={(e) => setConfig(prev => ({ ...prev, receipt: { ...prev.receipt, qrUrl: e.target.value } }))} placeholder="https://g.page/tu-negocio/review" />
-                {config.receipt.qrUrl && (
-                  <p className="text-xs text-green-600 dark:text-green-400">✓ Se generará el QR con esta URL</p>
-                )}
+              <div className="space-y-4 pt-2">
+                <Label>Imagen del Código QR</Label>
+                <div className="flex flex-col gap-4">
+                  {config.receipt.qrImageUrl ? (
+                    <div className="relative w-32 h-32 rounded-xl border border-dashed border-muted-foreground/20 overflow-hidden group">
+                      <img src={config.receipt.qrImageUrl} alt="QR Code" className="w-full h-full object-contain p-2" />
+                      <button
+                        onClick={() => setConfig(prev => ({ ...prev, receipt: { ...prev.receipt, qrImageUrl: "" } }))}
+                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                      >
+                        <Trash2 className="h-6 w-6" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative w-full">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="qr-upload"
+                      />
+                      <label
+                        htmlFor="qr-upload"
+                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/20 rounded-2xl cursor-pointer hover:bg-muted/50 transition-all gap-2"
+                      >
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">Subir imagen del QR</span>
+                      </label>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground italic">O pega la URL de la imagen directamente</Label>
+                    <Input
+                      value={config.receipt.qrImageUrl}
+                      onChange={(e) => setConfig(prev => ({ ...prev, receipt: { ...prev.receipt, qrImageUrl: e.target.value } }))}
+                      placeholder="https://ejemplo.com/mi-qr.png"
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
               </div>
             )}
             <Separator />
@@ -278,15 +328,15 @@ export default function PrintingTab() {
                 {config.receipt.footerText}
               </div>
 
-              {/* QR Code */}
+              {/* QR Code Section */}
               {config.receipt.includeQR && (
                 <div className="text-center mt-3">
-                  {config.receipt.qrUrl ? (
+                  {config.receipt.qrImageUrl ? (
                     <>
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(config.receipt.qrUrl)}`}
+                        src={config.receipt.qrImageUrl}
                         alt="QR Code"
-                        className="w-16 h-16 mx-auto"
+                        className="w-16 h-16 mx-auto object-contain"
                       />
                       <p className="text-[8px] text-gray-400 mt-1">Escanea para dejarnos una reseña</p>
                     </>
@@ -295,7 +345,7 @@ export default function PrintingTab() {
                       <div className="w-16 h-16 bg-gray-100 mx-auto flex items-center justify-center rounded border border-gray-200">
                         <QrCode className="h-10 w-10 text-gray-300" />
                       </div>
-                      <p className="text-[8px] text-gray-400 mt-1">Configura una URL para generar el QR</p>
+                      <p className="text-[8px] text-gray-400 mt-1">Sube una imagen de QR para mostrarla</p>
                     </>
                   )}
                 </div>

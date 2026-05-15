@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, Scissors, Calendar } from "lucide-react";
+import { Menu, X, Calendar, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Logo from "@/assets/logotayta.png";
 
 interface LandingNavbarProps {
   onReserveClick: () => void;
@@ -11,7 +13,7 @@ export function LandingNavbar({ onReserveClick }: LandingNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -26,82 +28,97 @@ export function LandingNavbar({ onReserveClick }: LandingNavbarProps) {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled
-          ? "bg-[#0a0c12]/95 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/30"
-          : "bg-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 px-6 sm:px-12 ${
+        isScrolled ? "py-4" : "py-8"
       }`}
     >
-      <div className="container mx-auto px-4 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5">
-            <Scissors className="h-6 w-6 text-gold" />
-            <div className="flex flex-col leading-none">
-              <span className="font-display text-lg lg:text-xl font-extrabold tracking-tight text-white">
-                BARBER<span className="text-gradient-gold">SHOP</span>
-              </span>
-              <span className="text-[9px] uppercase tracking-[0.25em] text-white/30 font-medium">
-                Barbería Premium
-              </span>
+      <div 
+        className={`container mx-auto transition-all duration-500 rounded-[2rem] ${
+          isScrolled 
+            ? "bg-[#050505]/80 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/50 px-8 py-3" 
+            : "bg-transparent px-4 py-4"
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          {/* Logo Section */}
+          <Link to="/" className="group flex items-center gap-4">
+            <div className={`relative transition-all duration-700 ${isScrolled ? 'w-56' : 'w-72'}`}>
+              <img 
+                src={Logo} 
+                alt="Tayta BarberShop Logo" 
+                className="w-full h-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] group-hover:scale-105 transition-transform duration-500"
+              />
             </div>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-7">
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-10">
             {navLinks.map((link) => (
-              <a
+              <button
                 key={link.href}
-                href={link.href}
-                className="text-white/50 hover:text-gold transition-colors duration-300 text-sm font-medium tracking-wide"
+                onClick={() => {
+                  const el = document.querySelector(link.href);
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="relative text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-all group py-2"
               >
                 {link.label}
-              </a>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-amber-500 transition-all duration-500 group-hover:w-full" />
+              </button>
             ))}
           </nav>
 
-          {/* CTA */}
-          <div className="flex items-center gap-3">
-            <button
+          {/* CTA & Mobile Toggle */}
+          <div className="flex items-center gap-5">
+            <Button
               onClick={onReserveClick}
-              className="hidden sm:flex btn-gold text-sm font-bold px-5 py-2.5 rounded-lg items-center gap-2"
+              className="hidden md:flex bg-amber-500 hover:bg-amber-600 text-black font-black px-10 h-14 rounded-2xl transition-all duration-500 shadow-lg shadow-amber-500/20 active:scale-95 group/btn"
             >
-              <Calendar className="h-4 w-4" />
-              Reservar
-            </button>
+              <Calendar className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+              RESERVAR
+            </Button>
+            
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden text-white p-2"
+              className="lg:hidden w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white transition-all hover:bg-white/10"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden glass-card mt-2 mb-4 p-4 animate-fade-in">
-            <nav className="flex flex-col gap-1">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-white/60 hover:text-gold transition-colors px-4 py-3 text-sm font-medium rounded-lg hover:bg-white/5"
-                >
-                  {link.label}
-                </a>
-              ))}
+      {/* Mobile Menu Overlay */}
+      <div 
+        className={`lg:hidden fixed inset-x-6 sm:inset-x-12 transition-all duration-700 ease-in-out ${
+          isMobileMenuOpen ? "top-32 opacity-100 translate-y-0" : "top-20 opacity-0 -translate-y-10 pointer-events-none"
+        }`}
+      >
+        <div className="bg-[#0a0a0a]/95 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-10 shadow-3xl">
+          <nav className="flex flex-col gap-8">
+            {navLinks.map((link) => (
               <button
-                onClick={() => { setIsMobileMenuOpen(false); onReserveClick(); }}
-                className="btn-gold text-sm font-bold px-5 py-3 rounded-lg mt-2 flex items-center justify-center gap-2"
+                key={link.href}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  const el = document.querySelector(link.href);
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="text-3xl font-light tracking-tighter text-zinc-300 hover:text-amber-500 transition-all flex items-center justify-between group"
               >
-                <Calendar className="h-4 w-4" />
-                Reservar Cita
+                {link.label}
+                <ChevronRight className="h-8 w-8 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 text-amber-500" />
               </button>
-            </nav>
-          </div>
-        )}
+            ))}
+            <div className="h-px bg-white/5 my-4" />
+            <Button
+              onClick={() => { setIsMobileMenuOpen(false); onReserveClick(); }}
+              className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black h-20 rounded-3xl text-xl shadow-2xl shadow-amber-500/20"
+            >
+              Reservar Cita Ahora
+            </Button>
+          </nav>
+        </div>
       </div>
     </header>
   );

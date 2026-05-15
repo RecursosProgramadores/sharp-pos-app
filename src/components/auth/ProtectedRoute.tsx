@@ -26,13 +26,19 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
-  // Esperar a que el rol se cargue
+  // Si ya no está cargando y no hay rol, significa que el usuario no tiene permisos asignados
+  if (!loading && role === null) {
+    console.warn("Usuario autenticado sin rol asignado.");
+    return <Navigate to="/auth" state={{ error: "Acceso no autorizado o usuario inactivo" }} replace />;
+  }
+
+  // Esperar a que el rol se cargue (solo si aún está cargando o es el estado inicial)
   if (role === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Cargando permisos...</p>
+          <p className="text-sm text-muted-foreground">Confirmando credenciales...</p>
         </div>
       </div>
     );

@@ -45,11 +45,15 @@ import LoyaltyTab from "@/components/configuracion/LoyaltyTab";
 import { CampaignBuilder } from "@/components/clientes/CampaignBuilder";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
+import { useSettings } from "@/hooks/useSettings";
 import { levelConfig } from "@/types/client";
 import type { Client } from "@/types/client";
 
 export default function Clientes() {
   const { clients, loading, addClient, updateClient, deleteClient, uploadPhoto } = useClients();
+  const { data: loyaltyConfig } = useSettings("loyalty", { 
+    sixthCutDiscount: { enabled: true, discount: 25, visitsRequired: 5 }
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [visitFilter, setVisitFilter] = useState("all");
@@ -330,7 +334,21 @@ export default function Clientes() {
                           {renderSatisfactionStars(client.satisfaction_rating)}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="secondary">{client.visits}</Badge>
+                          <div className="flex flex-col items-center gap-1">
+                            <Badge variant="secondary">{client.visits}</Badge>
+                            {loyaltyConfig?.sixthCutDiscount?.enabled && (() => {
+                              const vReq = Number(loyaltyConfig.sixthCutDiscount.visitsRequired) || 5;
+                              const progress = client.visits % (vReq + 1);
+                              return (
+                                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden mt-1" title={`Progreso: ${progress} / ${vReq}`}>
+                                  <div 
+                                    className={`h-full ${progress === vReq ? 'bg-primary animate-pulse' : 'bg-primary/50'}`}
+                                    style={{ width: `${Math.min(100, (progress / vReq) * 100)}%` }}
+                                  />
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold">${client.total_spent.toLocaleString()}</TableCell>
                         <TableCell>

@@ -1,8 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -15,107 +14,107 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 13% 13%;
 
-    --primary: 358 77% 46%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 20 95% 54%;
+    --secondary: 35 92% 40%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 20 95% 54%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 0 0% 0%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 358 77% 46%;
+    --ring: 45 100% 50%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 225 40% 7%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 358 77% 46%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 30% 14%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 225 30% 14%;
-    --sidebar-ring: 358 77% 46%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 45 100% 50%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 45 100% 50%;
 
     /* Custom tokens */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 45 100% 50%;
+    --warning-foreground: 0 0% 0%;
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    /* Barbershop landing tokens */
-    --landing-bg: 0 0% 7%;
-    --landing-surface: 0 0% 10%;
-    --gold: 358 77% 46%;
-    --gold-light: 20 95% 54%;
-    --neon-cyan: 20 95% 54%;
-    --barber-red: 358 77% 46%;
-    --barber-orange: 20 95% 54%;
-    --barber-bg: 0 0% 7%;
-    --barber-card: 0 0% 10%;
-    --barber-border: 0 0% 20%;
+    /* Barbershop landing tokens - Harmonized with Logo */
+    --landing-bg: 0 0% 4%;
+    --landing-surface: 0 0% 8%;
+    --gold: 45 100% 50%;
+    --gold-light: 48 100% 70%;
+    --neon-cyan: 45 100% 50%;
+    --barber-red: 45 100% 50%;
+    --barber-orange: 35 92% 40%;
+    --barber-bg: 0 0% 4%;
+    --barber-card: 0 0% 8%;
+    --barber-border: 0 0% 15%;
     --barber-text: 0 0% 98%;
-    --barber-muted: 0 0% 65%;
+    --barber-muted: 0 0% 60%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(358 77% 46%) 0%, hsl(20 95% 54%) 100%);
-    --gradient-dark: linear-gradient(135deg, hsl(0 0% 7%) 0%, hsl(0 0% 10%) 100%);
+    /* Gradients - Metallic Gold Look */
+    --gradient-primary: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(35 92% 40%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(0 0% 4%) 0%, hsl(0 0% 8%) 100%);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(220 13% 13% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(220 13% 13% / 0.1), 0 2px 4px -2px hsl(220 13% 13% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(220 13% 13% / 0.1), 0 4px 6px -4px hsl(220 13% 13% / 0.1);
-    --shadow-glow: 0 0 25px hsl(358 77% 46% / 0.3);
-    --shadow-glow-cyan: 0 0 25px hsl(20 95% 54% / 0.3);
+    /* Shadows - Golden Glow */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-glow: 0 0 25px hsl(45 100% 50% / 0.3);
+    --shadow-glow-cyan: 0 0 25px hsl(45 100% 50% / 0.2);
   }
 
   .dark {
-    --background: 225 40% 7%;
-    --foreground: 220 14% 96%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
 
-    --card: 225 35% 10%;
-    --card-foreground: 220 14% 96%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 225 35% 10%;
-    --popover-foreground: 220 14% 96%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 358 77% 46%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 20 95% 54%;
+    --secondary: 35 92% 40%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 225 30% 14%;
-    --muted-foreground: 220 9% 55%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 20 95% 54%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 0 0% 0%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 225 30% 14%;
-    --input: 225 30% 14%;
-    --ring: 358 77% 46%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 45 100% 50%;
 
-    --sidebar-background: 225 45% 5%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 358 77% 46%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 30% 12%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 225 30% 12%;
-    --sidebar-ring: 358 77% 46%;
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 45 100% 50%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 45 100% 50%;
   }
 }
 
@@ -293,8 +292,13 @@
     50% { opacity: 0.7; }
   }
 
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+  @keyframes highlight-pulse {
+    0% { background-color: transparent; }
+    50% { background-color: hsl(var(--primary) / 0.2); }
+    100% { background-color: transparent; }
+  }
+
+  .animate-highlight {
+    animation: highlight-pulse 0.8s ease-in-out;
   }
 }
