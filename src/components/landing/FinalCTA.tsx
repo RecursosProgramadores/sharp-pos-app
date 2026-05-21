@@ -7,7 +7,7 @@ interface FinalCTAProps {
 
 export function FinalCTA({ onReserveClick }: FinalCTAProps) {
   return (
-    <section className="py-24 lg:py-32 relative overflow-hidden bg-[#050505]">
+    <section className="py-24 lg:py-32 relative overflow-clip bg-[#050505]">
       {/* Dynamic Background Glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-amber-500/5 blur-[150px]" />
@@ -19,7 +19,7 @@ export function FinalCTA({ onReserveClick }: FinalCTAProps) {
           Reserva Premium
         </div>
         
-        <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-white mb-8 leading-[0.95] tracking-tighter uppercase italic">
+        <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 leading-[0.95] tracking-tighter uppercase italic">
           ¿Listo para tu próximo <br />
           <span className="text-gradient-gold">Look Legendario?</span>
         </h2>

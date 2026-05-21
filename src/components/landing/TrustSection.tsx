@@ -34,7 +34,7 @@ function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: str
   }, [target]);
 
   return (
-    <span ref={ref} className="font-display font-black text-5xl md:text-6xl lg:text-7xl text-gradient-gold tracking-tighter italic">
+    <span ref={ref} className="font-display font-black text-5xl md:text-6xl lg:text-7xl text-gradient-gold tracking-tighter italic pr-2 inline-block">
       {count.toLocaleString()}
       {suffix && (
         <span className="text-2xl md:text-3xl ml-1 align-top opacity-80">{suffix}</span>
@@ -52,7 +52,7 @@ export function TrustSection() {
   ];
 
   return (
-    <section className="py-28 relative bg-[#050505] overflow-hidden border-y border-white/5">
+    <section className="py-28 relative bg-[#050505] overflow-clip border-y border-white/5">
       {/* Background Decorative Glows */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] rounded-full" />
@@ -92,7 +92,7 @@ export function TrustSection() {
               </div>
               <div className="w-px h-8 bg-white/5" />
               <div className="flex flex-col">
-                <span className="text-white font-black text-sm tracking-widest uppercase italic">4.9/5 Promedio</span>
+                <span className="text-white font-black text-sm tracking-widest uppercase italic pr-2">4.9/5 Promedio</span>
                 <span className="text-zinc-600 text-[9px] font-bold uppercase tracking-tight">Opinión Clientes</span>
               </div>
             </div>
@@ -111,7 +111,7 @@ export function TrustSection() {
               </div>
               <div className="w-px h-8 bg-white/5" />
               <div className="flex flex-col">
-                <span className="text-white font-black text-sm tracking-widest uppercase italic">Respuesta Inmediata</span>
+                <span className="text-white font-black text-sm tracking-widest uppercase italic pr-2">Respuesta Inmediata</span>
                 <span className="text-zinc-600 text-[9px] font-bold uppercase tracking-tight">Vía WhatsApp</span>
               </div>
             </div>

@@ -31,13 +31,13 @@ export function HeroSection({ onReserveClick }: HeroSectionProps) {
           Barbería Premium
         </span>
 
-        <h1 className="font-display text-5xl md:text-7xl lg:text-8xl text-white mb-4 animate-slide-up">
+        <h2 className="font-display text-5xl md:text-7xl lg:text-8xl text-white mb-4 animate-slide-up">
           El arte de
           <br />
           <span className="text-primary">la barbería</span>
           <br />
           clásica
-        </h1>
+        </h2>
 
         <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-8 animate-fade-in">
           Tradición, precisión y estilo en cada servicio. Donde la excelencia

@@ -5,13 +5,12 @@ import WhatsAppIcon from "@/assets/whatsapp.svg";
 
 export function LandingContact() {
   const biz = useBusinessInfo();
-  const mainPhone = "970772564";
+  const mainPhone = "+51 970772564";
   const defaultMsg = "Hola Tayta BarberShop, deseo información sobre sus servicios.";
 
   const branch = {
     name: "Sucursal Central",
     address: "Jr. Independencia 1589, Huánuco",
-    schedule: "Lun - Sáb: 9:30 AM - 9:00 PM",
     phone: mainPhone,
   };
 
@@ -25,7 +24,7 @@ export function LandingContact() {
   ];
 
   return (
-    <section id="contacto" className="py-24 lg:py-32 relative bg-[#050505] overflow-hidden">
+    <section id="contacto" className="py-24 lg:py-32 relative bg-[#050505] overflow-clip">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] rounded-full -mr-64 -mt-64" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] rounded-full -ml-64 -mb-64" />
@@ -38,7 +37,7 @@ export function LandingContact() {
             <div className="lg:w-1/2">
               <div className="mb-10">
                 <span className="text-amber-500 text-[10px] font-black uppercase tracking-[0.4em]">Encuéntranos</span>
-                <h2 className="font-display text-4xl md:text-5xl font-black text-white mt-4 tracking-tighter uppercase italic">
+                <h2 className="font-display text-3xl md:text-4xl font-black text-white mt-4 tracking-tighter uppercase italic">
                   Tu Barbería <br />
                   <span className="text-gradient-gold">de Confianza</span>
                 </h2>
@@ -68,7 +67,10 @@ export function LandingContact() {
                     </div>
                     <div>
                       <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Horario de Atención</p>
-                      <p className="text-white font-bold leading-relaxed">{branch.schedule}</p>
+                      <div className="text-white font-bold leading-relaxed text-sm">
+                        <p>Lun - Sáb: 9:00 AM - 9:00 PM</p>
+                        <p>Dom: 9:30 AM - 8:00 PM</p>
+                      </div>
                     </div>
                   </div>
 

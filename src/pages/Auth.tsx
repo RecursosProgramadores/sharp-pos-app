@@ -10,6 +10,7 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { isRateLimited, getRateLimitRemainingSeconds, sanitizeInput } from "@/lib/security";
 import Logo from "@/assets/logotayta.png";
+import nosotrosImg from "@/assets/nosotros.jpeg";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255),
@@ -129,7 +130,7 @@ export default function Auth() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent z-10" />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#050505] z-10" />
         <img 
-          src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80" 
+          src={nosotrosImg} 
           alt="Barbershop" 
           className="w-full h-full object-cover opacity-80"
         />

@@ -33,30 +33,40 @@ export function LandingServices({ onReserveClick }: ServicesSectionProps) {
   };
 
   return (
-    <section id="servicios" className="py-24 lg:py-32 relative bg-barber-card">
-      <div className="container mx-auto px-4 lg:px-8">
-        <div className="text-center mb-12">
-          <span className="text-barber-orange text-sm font-semibold uppercase tracking-[0.25em]">
+    <section id="servicios" className="py-24 lg:py-36 relative bg-[#050505] overflow-clip">
+      {/* Background Ambient Glows */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-amber-500/3 blur-[160px] rounded-full -ml-64" />
+        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-amber-500/3 blur-[160px] rounded-full -mr-64" />
+      </div>
+
+      <div className="container mx-auto px-6 lg:px-12 relative z-10">
+        
+        {/* ── Header ── */}
+        <div className="text-center mb-16 max-w-3xl mx-auto">
+          <span className="text-amber-500 text-[10px] font-black uppercase tracking-[0.4em] mb-4 block">
             Servicios Premium
           </span>
-          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-barber-text mt-3 mb-3">
-            Excelencia en{" "}
+          <h2 className="font-display text-4xl sm:text-5xl font-black text-white leading-[0.95] tracking-tighter uppercase italic">
+            Excelencia en <br className="hidden sm:block" />
             <span className="text-gradient-gold">cada servicio</span>
           </h2>
-          <p className="text-barber-muted text-base max-w-lg mx-auto">
+          <p className="text-zinc-500 text-sm sm:text-base font-light mt-6 max-w-xl mx-auto leading-relaxed">
             Incluye lavado, cepillado y productos de alta gama. Reserva en segundos desde nuestro sistema exclusivo.
           </p>
+          <div className="w-16 h-[2px] bg-amber-500/30 mx-auto mt-6" />
         </div>
 
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
+        {/* ── Categories Buttons Bar ── */}
+        <div className="flex flex-wrap justify-center gap-3 mb-16 max-w-5xl mx-auto">
           {effectiveCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 border ${
+              className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300 border ${
                 activeCategory === cat
-                  ? "bg-barber-red text-white border-barber-red shadow-[0_0_20px_hsl(358_77%_46%/0.3)]"
-                  : "bg-transparent text-barber-muted border-barber-border hover:border-barber-red/40 hover:text-barber-text"
+                  ? "bg-amber-500 text-black border-amber-500 shadow-[0_10px_20px_-8px_rgba(245,158,11,0.4)]"
+                  : "bg-white/5 text-zinc-400 border-white/5 hover:border-amber-500/30 hover:text-white"
               }`}
             >
               {cat}
@@ -64,65 +74,81 @@ export function LandingServices({ onReserveClick }: ServicesSectionProps) {
           ))}
         </div>
 
+        {/* ── Services Cards Grid ── */}
         {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="rounded-2xl bg-barber-bg border border-barber-border p-6 animate-pulse">
-                <div className="h-4 bg-barber-card rounded w-2/3 mb-3" />
-                <div className="h-3 bg-barber-card rounded w-full mb-6" />
-                <div className="h-8 bg-barber-card rounded w-1/3" />
+              <div key={i} className="rounded-3xl bg-white/[0.01] border border-white/5 p-8 animate-pulse h-80 flex flex-col justify-between">
+                <div>
+                  <div className="h-3 bg-white/10 rounded w-1/3 mb-4" />
+                  <div className="h-6 bg-white/10 rounded w-2/3 mb-2" />
+                  <div className="h-4 bg-white/10 rounded w-full mb-1" />
+                  <div className="h-4 bg-white/10 rounded w-4/5" />
+                </div>
+                <div className="h-10 bg-white/10 rounded w-full" />
               </div>
             ))}
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-barber-muted text-lg">No hay servicios en esta categoría aún.</p>
+          <div className="text-center py-20">
+            <p className="text-zinc-500 text-lg font-light italic">No hay servicios en esta categoría aún.</p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto items-stretch">
             {filteredServices.map((service, i) => (
               <div
                 key={service.id || i}
-                className="group relative rounded-2xl bg-barber-bg border border-barber-border p-6 transition-all duration-500 hover:border-barber-red/30 hover:shadow-[0_8px_40px_-8px_hsl(358_77%_46%/0.15)] hover:-translate-y-1"
+                className="group relative rounded-[2rem] bg-white/[0.02] border border-white/5 p-8 transition-all duration-500 hover:border-amber-500/20 hover:bg-amber-500/[0.01] flex flex-col justify-between shadow-md"
               >
+                {/* Popular Badge */}
                 {service.is_popular && (
-                  <div className="absolute -top-3 right-4 flex items-center gap-1 px-3 py-1 rounded-full bg-barber-red text-white text-xs font-bold">
+                  <div className="absolute -top-3 right-6 flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500 text-black text-[9px] font-black uppercase tracking-wider shadow-[0_5px_15px_rgba(245,158,11,0.3)]">
                     <Star className="h-3 w-3 fill-current" />
                     Popular
                   </div>
                 )}
 
-                <span className="text-[10px] uppercase tracking-widest text-barber-muted font-semibold">
-                  {service.category}
-                </span>
-
-                <h3 className="text-barber-text font-bold text-lg mt-1 mb-2 leading-tight">
-                  {service.name}
-                </h3>
-
-                {service.description && (
-                  <p className="text-barber-muted text-sm mb-4 leading-relaxed line-clamp-2">
-                    {service.description}
-                  </p>
-                )}
-
-                <div className="flex items-end justify-between mt-auto pt-2 border-t border-barber-border">
-                  <div className="flex items-center gap-1.5 text-barber-muted text-xs">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>{formatDuration(service.duration_minutes)}</span>
-                  </div>
-                  <span className="font-display text-2xl font-extrabold text-barber-red">
-                    S/{service.price}
+                {/* Card Top */}
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-black">
+                    {service.category}
                   </span>
+
+                  <h3 className="text-white font-black text-xl mt-2 mb-3 leading-snug uppercase italic tracking-tight group-hover:text-amber-500 transition-colors pr-2">
+                    {service.name}
+                  </h3>
+
+                  {service.description && (
+                    <p className="text-zinc-400 text-xs leading-relaxed font-light mb-6 line-clamp-3">
+                      {service.description}
+                    </p>
+                  )}
                 </div>
 
-                <button
-                  onClick={() => onReserveClick(service.id)}
-                  className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border border-barber-red/30 text-barber-red hover:bg-barber-red hover:text-white hover:shadow-[0_0_20px_hsl(358_77%_46%/0.25)]"
-                >
-                  <Calendar className="h-3.5 w-3.5 inline mr-1.5" />
-                  Reservar
-                </button>
+                {/* Card Bottom / Price / Booking Button */}
+                <div className="mt-auto">
+                  <div className="flex items-end justify-between pb-4 border-t border-white/5 pt-4">
+                    <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-semibold">
+                      <Clock className="h-3.5 w-3.5 text-amber-500/60" />
+                      <span>{formatDuration(service.duration_minutes)}</span>
+                    </div>
+                    <span className="font-display text-2xl sm:text-3xl font-black text-amber-500 italic pr-2 inline-block">
+                      S/{service.price}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => onReserveClick(service.id)}
+                    className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 ${
+                      service.is_popular
+                        ? "bg-amber-500 text-black border border-amber-500 shadow-md shadow-amber-500/10 hover:bg-amber-600 hover:shadow-amber-500/20"
+                        : "bg-white/5 border border-white/5 text-white hover:bg-amber-500 hover:text-black hover:border-amber-500"
+                    }`}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Reservar
+                  </button>
+                </div>
               </div>
             ))}
           </div>

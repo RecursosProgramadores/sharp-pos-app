@@ -2,17 +2,10 @@ import { Link } from "react-router-dom";
 import { 
   Instagram, 
   Facebook, 
-  MessageCircle, 
-  ShieldCheck, 
-  Scissors,
   MapPin,
-  Phone,
-  Mail,
   Clock,
-  ExternalLink,
   ChevronRight
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useBusinessInfo, buildWhatsAppLink } from "@/hooks/useBusinessInfo";
 import Logo from "@/assets/logotayta.png";
 import WhatsAppIcon from "@/assets/whatsapp.svg";
@@ -67,7 +60,7 @@ export function LandingFooter() {
                   </div>
                   <div className="flex items-center gap-4 mt-6">
                     <div className="h-px w-16 bg-amber-500/50" />
-                    <p className="text-amber-500 font-display text-sm uppercase tracking-[0.5em] font-semibold italic">
+                    <p className="text-amber-500 font-display text-sm uppercase tracking-[0.5em] font-semibold italic pr-2 inline-block">
                       {biz.tagline || "Tu estilo, nuestra pasión"}
                     </p>
                   </div>
@@ -127,8 +120,8 @@ export function LandingFooter() {
             </nav>
           </div>
 
-          {/* Contact & Admin CTA */}
-          <div className="lg:col-span-4 space-y-16">
+          {/* Contact Info */}
+          <div className="lg:col-span-4">
             {/* Contact Grid */}
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-4">
@@ -150,31 +143,6 @@ export function LandingFooter() {
                 </p>
               </div>
             </div>
-
-            {/* Premium Admin Card */}
-            <div className="relative group p-[1px] rounded-3xl overflow-hidden transition-all duration-500 hover:scale-[1.02]">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/40 via-transparent to-white/10 opacity-50 group-hover:opacity-100 transition-opacity" />
-              <div className="relative bg-[#0a0a0a] p-8 rounded-3xl backdrop-blur-xl">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20">
-                    <ShieldCheck className="h-7 w-7 text-amber-500" />
-                  </div>
-                  <Scissors className="h-10 w-10 text-zinc-800 rotate-45 group-hover:rotate-0 transition-transform duration-700" />
-                </div>
-                <h4 className="text-2xl font-bold mb-3 tracking-tight">Acceso Staff</h4>
-                <p className="text-zinc-500 text-sm mb-8 leading-relaxed font-light">
-                  ¿Eres parte del equipo? Accede al panel de control exclusivo para profesionales.
-                </p>
-                <Link to="/admin">
-                  <Button className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black h-16 rounded-2xl transition-all duration-500 shadow-[0_20px_40px_-15px_rgba(245,158,11,0.3)] group-hover:shadow-[0_25px_50px_-12px_rgba(245,158,11,0.4)]">
-                    <span className="flex items-center gap-3 text-base">
-                      Panel Administrativo
-                      <ExternalLink className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    </span>
-                  </Button>
-                </Link>
-              </div>
-            </div>
           </div>
 
         </div>
@@ -190,7 +158,7 @@ export function LandingFooter() {
             </p>
           </div>
           
-          <div className="flex gap-16">
+          <div className="flex flex-wrap gap-8 md:gap-12 justify-center md:justify-end">
             <Link 
               to="/privacidad" 
               className="text-zinc-500 hover:text-amber-500 transition-all duration-300 text-[11px] uppercase tracking-[0.25em] font-bold relative group/link"
@@ -205,6 +173,15 @@ export function LandingFooter() {
               Términos
               <span className="absolute -bottom-1 left-0 w-0 h-px bg-amber-500 group-hover/link:w-full transition-all duration-500" />
             </Link>
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSfy9eBkXohwlpbyXLNo2BgQto_AZPVDnqIMiVcfHVZ4Z5p_dw/viewform?pli=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-red-400 hover:text-red-300 transition-all duration-300 text-[11px] uppercase tracking-[0.25em] font-bold relative group/link"
+            >
+              Libro de Reclamaciones
+              <span className="absolute -bottom-1 left-0 w-0 h-px bg-red-400 group-hover/link:w-full transition-all duration-500" />
+            </a>
           </div>
         </div>
       </div>

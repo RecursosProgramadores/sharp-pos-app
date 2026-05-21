@@ -32,7 +32,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename="/sharp-pos-app/">
+      <BrowserRouter>
         <AuthProvider>
           <Routes>
             {/* Public routes - Landing Page */}

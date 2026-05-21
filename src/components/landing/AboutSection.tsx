@@ -29,7 +29,7 @@ export function AboutSection() {
   ];
 
   return (
-    <section id="nosotros" className="py-32 lg:py-56 bg-[#050505] relative overflow-hidden">
+    <section id="nosotros" className="py-32 lg:py-56 bg-[#050505] relative overflow-clip">
       {/* Cinematic Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,rgba(245,158,11,0.05)_0%,transparent_50%)]" />
@@ -45,7 +45,7 @@ export function AboutSection() {
               <div className="h-px w-12 bg-amber-500" />
               <span className="text-amber-500 text-[10px] font-black uppercase tracking-[0.5em]">Nuestra Esencia</span>
             </div>
-            <h2 className="font-display text-7xl md:text-8xl lg:text-[10rem] font-black text-white leading-[0.8] tracking-tighter uppercase italic">
+            <h2 className="font-display text-6xl md:text-7xl lg:text-8xl font-black text-white leading-[0.8] tracking-tighter uppercase italic">
               Tayta <br />
               <span className="text-gradient-gold">Legacy</span>
             </h2>
@@ -96,7 +96,7 @@ export function AboutSection() {
         <div className="relative">
           <div className="text-center mb-24">
             <span className="text-amber-500/50 text-[10px] font-black uppercase tracking-[0.6em] mb-4 block">Lo que nos define</span>
-            <h3 className="font-display text-5xl md:text-7xl font-black text-white uppercase italic tracking-tighter">Nuestros Valores</h3>
+            <h3 className="font-display text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter pr-4 pb-1">Nuestros Valores</h3>
           </div>
 
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -112,7 +112,7 @@ export function AboutSection() {
                   </div>
                   
                   <span className="text-amber-500/40 text-[9px] font-black uppercase tracking-[0.3em] mb-3">{value.tag}</span>
-                  <h4 className="font-display text-2xl font-black text-white mb-6 uppercase italic tracking-tight">{value.title}</h4>
+                  <h4 className="font-display text-2xl font-black text-white mb-6 uppercase italic tracking-tight pr-2">{value.title}</h4>
                   <p className="text-zinc-500 text-sm leading-relaxed group-hover:text-zinc-300 transition-colors">
                     {value.description}
                   </p>

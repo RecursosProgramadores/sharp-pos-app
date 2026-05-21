@@ -1,119 +1,141 @@
+import { useRef } from "react";
 import { usePublicBarbers } from "@/hooks/usePublicData";
-import { Scissors, Award, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const defaultImages = [
+  "https://images.unsplash.com/photo-1503467913725-8484b65b0715?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=800&auto=format&fit=crop"
+];
 
 export function LandingTeam() {
   const { data: barbers, isLoading: loading } = usePublicBarbers();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const fallbackBarbers = [
-    { full_name: "Carlos Mendoza", specialty: "Fade & Diseños", photo_url: null },
-    { full_name: "Miguel Ramírez", specialty: "Barba Experta", photo_url: null },
-    { full_name: "David Torres", specialty: "Corte Clásico", photo_url: null },
-    { full_name: "Andrés García", specialty: "Afeitado Clásico", photo_url: null },
+    { id: "1", full_name: "Jheremy Sair", photo_url: defaultImages[0] },
+    { id: "2", full_name: "Juan Perez", photo_url: defaultImages[1] },
+    { id: "3", full_name: "Tayta", photo_url: defaultImages[2] },
+    { id: "4", full_name: "Vanessa Rosa Aquino", photo_url: defaultImages[3] },
   ];
 
   const displayBarbers = barbers && barbers.length > 0 ? barbers : fallbackBarbers;
 
-  return (
-    <section id="equipo" className="py-24 lg:py-32 relative bg-barber-bg overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-barber-red/5 rounded-full blur-[120px]" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-barber-orange/5 rounded-full blur-[150px]" />
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -340, behavior: "smooth" });
+    }
+  };
 
-      <div className="container mx-auto px-4 lg:px-8 relative">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-barber-red/20 bg-barber-red/5 mb-4">
-            <Scissors className="h-3.5 w-3.5 text-barber-red" />
-            <span className="text-barber-red text-xs font-bold uppercase tracking-[0.2em]">
-              Nuestro Equipo
-            </span>
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 340, behavior: "smooth" });
+    }
+  };
+
+  return (
+    <section id="equipo" className="py-24 lg:py-36 bg-[#050505] relative overflow-clip">
+      {/* Hide scrollbar utility */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-none {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}} />
+
+      {/* Background decorations */}
+      <div className="absolute top-0 left-0 w-72 h-72 bg-amber-500/5 rounded-full blur-[120px]" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-[150px]" />
+
+      <div className="container mx-auto px-6 lg:px-12 relative z-10">
+        
+        {/* ── Header ── */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-16 max-w-7xl mx-auto gap-6">
+          <div className="text-left">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-amber-500 text-[10px] font-black uppercase tracking-[0.5em]">Nuestro Equipo</span>
+              <div className="h-px w-8 bg-amber-500/30" />
+            </div>
+            <h2 className="font-display text-4xl sm:text-5xl font-black text-white leading-[0.9] tracking-tighter uppercase italic">
+              Maestros del <span className="text-gradient-gold">Oficio</span>
+            </h2>
+            <p className="text-zinc-500 text-sm sm:text-base font-light mt-4 max-w-xl">
+              Profesionales con años de experiencia dedicados a esculpir tu mejor versión a través del arte y la precisión.
+            </p>
           </div>
-          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-barber-text mt-3">
-            Maestros{" "}
-            <span className="text-gradient-gold">del Oficio</span>
-          </h2>
-          <p className="text-barber-muted mt-4 max-w-xl mx-auto text-base">
-            Profesionales con años de experiencia dedicados a que luzcas tu mejor versión.
-          </p>
+          
+          {/* Slider controls */}
+          <div className="flex gap-3 shrink-0 self-start md:self-end">
+            <button
+              onClick={scrollLeft}
+              className="w-12 h-12 rounded-full border border-white/10 bg-white/5 hover:bg-amber-500 hover:text-black hover:border-amber-500 text-white flex items-center justify-center transition-all duration-300 active:scale-95"
+              aria-label="Anterior"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={scrollRight}
+              className="w-12 h-12 rounded-full border border-white/10 bg-white/5 hover:bg-amber-500 hover:text-black hover:border-amber-500 text-white flex items-center justify-center transition-all duration-300 active:scale-95"
+              aria-label="Siguiente"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Barbers grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        {/* ── Horizontal Scroll Slider Row ── */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex gap-6 overflow-x-auto scrollbar-none snap-x snap-mandatory max-w-7xl mx-auto py-4 px-1"
+        >
           {loading ? (
             [...Array(4)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="rounded-2xl bg-barber-card border border-barber-border p-6">
-                  <div className="w-24 h-24 rounded-full bg-barber-border mx-auto mb-4" />
-                  <div className="h-4 bg-barber-border rounded w-2/3 mx-auto mb-2" />
-                  <div className="h-3 bg-barber-border rounded w-1/2 mx-auto" />
-                </div>
+              <div key={i} className="animate-pulse w-[280px] sm:w-[320px] shrink-0">
+                <div className="relative aspect-[3/4.5] rounded-[2rem] bg-zinc-900 border border-white/5" />
               </div>
             ))
           ) : (
-            displayBarbers.map((barber, i) => (
-              <div
-                key={i}
-                className="group relative"
-              >
-                {/* Card */}
-                <div className="relative rounded-2xl bg-barber-card border border-barber-border p-6 pt-8 text-center transition-all duration-500 hover:border-barber-red/30 hover:shadow-[0_12px_40px_-8px_hsl(358_77%_46%/0.2)] hover:-translate-y-2">
-                  {/* Top accent */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-barber-red to-barber-orange rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            displayBarbers.map((barber, i) => {
+              const imageSrc = barber.photo_url || defaultImages[i % defaultImages.length];
+              return (
+                <div
+                  key={barber.id || i}
+                  className="w-[280px] sm:w-[320px] shrink-0 snap-start group relative"
+                >
+                  <div className="relative aspect-[3/4.5] overflow-hidden rounded-[2rem] border border-white/5 bg-zinc-950 shadow-2xl">
+                    {/* Image */}
+                    <img
+                      src={imageSrc}
+                      alt={barber.full_name}
+                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100"
+                      loading="lazy"
+                    />
+                    
+                    {/* Overlay Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent transition-opacity duration-500" />
 
-                  {/* Avatar */}
-                  <div className="relative w-28 h-28 mx-auto mb-5">
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-barber-red/20 to-barber-orange/20 group-hover:from-barber-red/40 group-hover:to-barber-orange/40 transition-all duration-500" />
-                    <div className="absolute inset-[3px] rounded-full overflow-hidden bg-barber-bg">
-                      {barber.photo_url ? (
-                        <img
-                          src={barber.photo_url}
-                          alt={barber.full_name}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-barber-card to-barber-bg flex items-center justify-center">
-                          <span className="font-display text-3xl font-extrabold text-barber-red/25 group-hover:text-barber-red/40 transition-colors duration-500">
-                            {barber.full_name.split(" ").map((n) => n[0]).join("")}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Online indicator */}
-                    <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-barber-card border-2 border-barber-card flex items-center justify-center">
-                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                    </div>
-                  </div>
-
-                  {/* Name */}
-                  <h3 className="text-barber-text font-bold text-lg mb-1">{barber.full_name}</h3>
-                  
-                  {/* Specialty badge */}
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-barber-red/10 border border-barber-red/20 mb-4">
-                    <Scissors className="h-3 w-3 text-barber-red" />
-                    <span className="text-barber-red text-xs font-semibold">
-                      {barber.specialty || "Barbero profesional"}
-                    </span>
-                  </div>
-
-                  {/* Stats row */}
-                  <div className="grid grid-cols-2 gap-2 pt-4 border-t border-barber-border">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-barber-orange mb-0.5">
-                        <Award className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider text-barber-muted font-semibold">Experto</span>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-barber-orange mb-0.5">
-                        <Sparkles className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider text-barber-muted font-semibold">Premium</span>
+                    {/* Content Overlay */}
+                    <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                      <h3 className="font-display text-2xl sm:text-3xl font-black text-white uppercase italic tracking-tight leading-none group-hover:text-amber-500 transition-colors pr-2">
+                        {barber.full_name}
+                      </h3>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
+        </div>
+
+        {/* Bottom Decorative Line */}
+        <div className="mt-24 flex items-center gap-8 justify-center">
+          <div className="h-px flex-1 max-w-[200px] bg-gradient-to-r from-transparent to-amber-500/10" />
+          <p className="text-amber-500/30 text-[9px] font-black uppercase tracking-[0.8em]">Supreme Grooming Masters</p>
+          <div className="h-px flex-1 max-w-[200px] bg-gradient-to-l from-transparent to-amber-500/10" />
         </div>
       </div>
     </section>
