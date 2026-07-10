@@ -178,8 +178,7 @@ export default function POS() {
       const { data, error } = await supabase
         .from("clients")
         .select("id, full_name, phone, level, points")
-        .order("full_name")
-        .limit(200);
+        .order("full_name");
       if (error) throw error;
       return data;
     },
